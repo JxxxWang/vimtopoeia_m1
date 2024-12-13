@@ -2,12 +2,14 @@ import warnings
 from importlib.util import find_spec
 from typing import Any, Callable, Dict, Optional, Tuple
 
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 
 from src.utils import pylogger, rich_utils
 
 log = pylogger.RankedLogger(__name__, rank_zero_only=True)
 
+def register_resolvers() -> None:
+    OmegaConf.register_new_resolver("mul", lambda x, y: x * y)
 
 def extras(cfg: DictConfig) -> None:
     """Applies optional utilities before the task is started.
@@ -38,6 +40,7 @@ def extras(cfg: DictConfig) -> None:
     if cfg.extras.get("print_config"):
         log.info("Printing config tree with Rich! <cfg.extras.print_config=True>")
         rich_utils.print_config_tree(cfg, resolve=True, save_to_file=True)
+
 
 
 def task_wrapper(task_func: Callable) -> Callable:

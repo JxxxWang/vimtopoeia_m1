@@ -30,7 +30,9 @@ from src.utils import (
     instantiate_loggers,
     log_hyperparameters,
     task_wrapper,
+    register_resolvers
 )
+register_resolvers()
 
 log = RankedLogger(__name__, rank_zero_only=True)
 

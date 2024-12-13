@@ -1,0 +1,41 @@
+_target_: src.models.ksin_flow_matching_module.KSinFlowMatchingModule
+
+optimizer:
+  _target_: torch.optim.Adam
+  _partial_: true
+  lr: 0.0001
+  weight_decay: 0.0
+
+scheduler:
+  _target_: torch.optim.lr_scheduler.CosineAnnealingLR
+  _partial_: true
+  T_max: ${trainer.max_epochs}
+  eta_min: 1e-6
+  last_epoch: -1
+
+encoder:
+  _target_: src.models.components.residual_mlp.SpectralResidualMLP
+  in_dim: ${data.signal_length}
+  hidden_dim: 1024
+  out_dim: 64
+  num_blocks: 3
+
+vector_field:
+  _target_: src.models.components.vector_field.VectorField
+  field_dim: ${mul:${data.k},2}
+  hidden_dim: 1024
+  conditioning_dim: ${model.encoder.out_dim}
+  num_blocks: 3
+
+cfg_dropout_rate: 0.1
+train_schedule: uniform
+sample_schedule_curve: 2.0
+
+validation_sample_steps: 50
+validation_cfg_strength: 4.0
+
+test_sample_steps: 100
+test_cfg_strength: 4.0
+
+# compile model for faster training with pytorch 2.0
+compile: false

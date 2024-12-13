@@ -1,3 +1,11 @@
+[project]
+name = "synth-permutations"
+version = "0.1.0"
+description = "Studying the effect of permutation symmetry on audio synthesiser parameter inference."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
 [tool.pytest.ini_options]
 addopts = [
   "--color=yes",
