@@ -3,7 +3,7 @@ from typing import Any, Callable, Dict, Tuple
 import torch
 from lightning import LightningModule
 
-from src.metrics import ChamferDistance, LogSpectralDistance, SpectralDistance
+from src.metrics import ChamferDistance, LinearAssignmentDistance, LogSpectralDistance, SpectralDistance
 from src.models.components.loss import ChamferLoss
 
 
@@ -29,17 +29,12 @@ class KSinFeedForwardModule(LightningModule):
         else:
             raise NotImplementedError(f"Unsupported loss function: {loss_fn}")
 
-        self.train_lsd = LogSpectralDistance()
-        self.train_sd = SpectralDistance()
-        self.train_chamfer = ChamferDistance()
-
         self.val_lsd = LogSpectralDistance()
-        self.val_sd = SpectralDistance()
         self.val_chamfer = ChamferDistance()
 
         self.test_lsd = LogSpectralDistance()
-        self.test_sd = SpectralDistance()
         self.test_chamfer = ChamferDistance()
+        self.test_lad = LinearAssignmentDistance()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.net(x)
@@ -51,7 +46,7 @@ class KSinFeedForwardModule(LightningModule):
         self.val_chamfer.reset()
 
     def model_step(self, batch: Tuple[torch.Tensor, torch.Tensor]):
-        x, y = batch
+        x, y, _ = batch
         preds = self.forward(x)
         loss = self.criterion(preds, y)
         return loss, preds, y, x
@@ -59,20 +54,7 @@ class KSinFeedForwardModule(LightningModule):
     def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
         loss, preds, targets, inputs = self.model_step(batch)
 
-        self.train_lsd(preds, inputs)
-        self.train_sd(preds, inputs)
-        self.train_chamfer(preds, targets)
-        self.log(
-            "train/lsd", self.train_lsd, on_step=False, on_epoch=True, prog_bar=True
-        )
-        self.log("train/sd", self.train_sd, on_step=False, on_epoch=True, prog_bar=True)
-        self.log(
-            "train/chamfer",
-            self.train_chamfer,
-            on_step=False,
-            on_epoch=True,
-            prog_bar=True,
-        )
+        *_, synth_fn = batch
         self.log("train/loss", loss, on_step=False, on_epoch=True, prog_bar=True)
 
         # return loss or backpropagation will fail
@@ -85,12 +67,11 @@ class KSinFeedForwardModule(LightningModule):
         loss, preds, targets, inputs = self.model_step(batch)
 
         # update and log metrics
-        self.val_lsd(preds, inputs)
-        self.val_sd(preds, inputs)
+        *_, synth_fn = batch
+        self.val_lsd(preds, inputs, synth_fn)
         self.val_chamfer(preds, targets)
 
         self.log("val/lsd", self.val_lsd, on_step=False, on_epoch=True, prog_bar=True)
-        self.log("val/sd", self.val_sd, on_step=False, on_epoch=True, prog_bar=True)
         self.log(
             "val/chamfer", self.val_chamfer, on_step=False, on_epoch=True, prog_bar=True
         )
@@ -102,11 +83,11 @@ class KSinFeedForwardModule(LightningModule):
     def test_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
         loss, preds, targets, inputs = self.model_step(batch)
 
-        self.test_lsd(preds, inputs)
-        self.test_sd(preds, inputs)
+        *_, synth_fn = batch
+        self.test_lsd(preds, inputs, synth_fn)
         self.test_chamfer(preds, targets)
+        self.test_lad(preds, targets)
         self.log("test/lsd", self.test_lsd, on_step=False, on_epoch=True, prog_bar=True)
-        self.log("test/sd", self.test_sd, on_step=False, on_epoch=True, prog_bar=True)
         self.log(
             "test/chamfer",
             self.test_chamfer,
@@ -115,6 +96,7 @@ class KSinFeedForwardModule(LightningModule):
             prog_bar=True,
         )
         self.log("test/loss", loss, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("test/lad", self.test_lad, on_step=False, on_epoch=True, prog_bar=True)
 
     def on_test_epoch_end(self) -> None:
         # TODO: implement metrics

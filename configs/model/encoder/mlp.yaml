@@ -1,0 +1,5 @@
+_target_: src.models.components.residual_mlp.SpectralResidualMLP
+in_dim: ${data.signal_length}
+hidden_dim: 1024
+out_dim: 256
+num_blocks: 2

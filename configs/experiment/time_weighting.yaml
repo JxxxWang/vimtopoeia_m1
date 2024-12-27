@@ -5,41 +5,40 @@
 
 defaults:
   - override /data: ksin
-  - override /model: ksin_ff
+  - override /model: ksin_flow
   - override /callbacks: default
   - override /trainer: gpu
+  - _self_
 
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
 
-experiment_name: ksin
+experiment_name: time_weighting
+run_name: ${model.p_time}_${model.w_time}
+
+data:
+  k: 8
 
 tags:
   - ksin
-  - mlp
-  - mse
-  - asym
   - k_${data.k}
+  - time_weighting
 
 seed: 12345
 
-model:
-  loss_fn: mse
-
-data:
-  break_symmetry: true
-
 trainer:
-  min_epochs: 10
+  min_epochs: 1000
   max_epochs: 1000
-  limit_val_batches: 0.0
+  check_val_every_n_epoch: 4
+  limit_val_batches: 10
 
 logger:
   wandb:
     tags: ${tags}
-    group: ${data.k}sin
-    name: ${data.k}sin_mlp_asym
+    group: time_weighting
+    name: time_weighting_${run_name}
 
 callbacks:
   model_checkpoint:
-    monitor: train/loss
+    monitor: null
+  early_stopping: null

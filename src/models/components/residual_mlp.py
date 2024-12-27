@@ -1,7 +1,9 @@
-from typing import Optional
+from typing import Literal, Optional
 
 import torch
 import torch.nn as nn
+
+from src.models.components.cnn import ResidualEncoder
 
 
 class ResidualMLPBlock(nn.Module):
@@ -68,6 +70,30 @@ class SpectralResidualMLP(ResidualMLP):
         super().__init__(true_in_dim, hidden_dim, out_dim, num_blocks)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        X = torch.fft.rfft(x)
+        X = torch.fft.rfft(x, norm="forward")
         X = torch.abs(X)
         return super().forward(X)
+
+
+class CNNResidualMLP(nn.Module):
+    def __init__(
+        self,
+        in_dim: int = 1024,
+        channels: int = 16,
+        encoder_blocks: int = 4,
+        trunk_blocks: int = 5,
+        hidden_dim: int = 2048,
+        out_dim: int = 16,
+        kernel_size: int = 7,
+        norm: Literal["bn", "ln"] = "bn",
+    ):
+        super().__init__()
+
+        self.encoder = ResidualEncoder(
+            in_dim, channels, hidden_dim, encoder_blocks, kernel_size, norm
+        )
+        self.trunk = ResidualMLP(hidden_dim, hidden_dim, out_dim, trunk_blocks)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        z = self.encoder(x)
+        return self.trunk(z)

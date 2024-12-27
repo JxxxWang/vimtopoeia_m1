@@ -5,9 +5,9 @@
 
 defaults:
   - override /data: ksin
-  - override /model: ksin_ff
   - override /callbacks: default
   - override /trainer: gpu
+  - _self_
 
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
@@ -16,26 +16,26 @@ experiment_name: ksin
 
 tags:
   - ksin
-  - mlp
-  - mse
   - k_${data.k}
+  - data_standardised
+  - fft_norm
 
 seed: 12345
 
-model:
-  loss_fn: mse
-
 trainer:
-  min_epochs: 10
+  min_epochs: 1000
   max_epochs: 1000
-  limit_val_batches: 0.0
+  gradient_clip_val: 1.0
+  check_val_every_n_epoch: 10
+  limit_val_batches: 10
 
 logger:
   wandb:
     tags: ${tags}
-    group: ${data.k}sin
-    name: ${data.k}sin_mlp_mse
+    group: ${data.k}sin_new
+    name: ${data.k}sin_${run_name}
 
 callbacks:
   model_checkpoint:
-    monitor: train/loss
+    monitor: val/lsd
+  early_stopping: null

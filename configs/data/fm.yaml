@@ -1,9 +1,7 @@
-_target_: src.data.ksin_datamodule.KSinDataModule
-k: 1
+_target_: src.data.fm_datamodule.FMDataModule
+algorithm: mixed
 signal_length: 1024
-sort_frequencies: false
 break_symmetry: false
-shift_test_distribution: false
 train_val_test_sizes:
   - 1_024_000
   - 10_240

@@ -1,0 +1,6 @@
+# @package _global_
+
+data:
+  algorithm: conditional
+
+out_dim: 6

@@ -5,43 +5,63 @@ from lightning import LightningDataModule
 
 
 def _sample_freqs(
-    k: int, num_samples: int, device: Union[str, torch.device]
+    k: int,
+    num_samples: int,
+    device: Union[str, torch.device],
+    generator: Optional[torch.Generator] = None,
 ) -> torch.Tensor:
-    return torch.empty(num_samples, k, device=device).uniform_(0, torch.pi)
+    return torch.empty(num_samples, k, device=device).uniform_(
+        -1.0, 1.0, generator=generator
+    )
 
 
 def _sample_amplitudes(
-    k: int, num_samples: int, device: Union[str, torch.device]
+    k: int,
+    num_samples: int,
+    device: Union[str, torch.device],
+    generator: Optional[torch.Generator] = None,
 ) -> torch.Tensor:
-    return torch.empty(num_samples, k, device=device).uniform_(0, 1)
+    return torch.empty(num_samples, k, device=device).uniform_(
+        -1.0, 1.0, generator=generator
+    )
 
 
 def _sample_freqs_symmetry_broken(
-    k: int, num_samples: int, device: Union[str, torch.device]
+    k: int,
+    num_samples: int,
+    device: Union[str, torch.device],
+    generator: Optional[torch.Generator] = None,
 ) -> torch.Tensor:
     """Sample frequencies such that each sinusoidal component has frequency drawn from
     disjoint intervals.
     """
-    freqs = _sample_freqs(k, num_samples, device) / k
-    shift = torch.pi * torch.arange(k, device=device) / k
+    freqs = _sample_freqs(k, num_samples, device, generator) / k
+    shift = 2.0 * torch.arange(k, device=device) / k
     return freqs + shift[None, :]
 
 
 def _sample_freqs_shifted(
-    k: int, num_samples: int, is_test: bool, device: Union[str, torch.device]
+    k: int,
+    num_samples: int,
+    is_test: bool,
+    device: Union[str, torch.device],
+    generator: Optional[torch.Generator] = None,
 ) -> torch.Tensor:
     """Sample frequencies with different train and test distributions. These are
     slightly overlapping truncated normal distributions.
     """
     freqs = torch.empty(num_samples, k, device=device)
-    mean = torch.pi / 3 if not is_test else 2 * torch.pi / 3
+    mean = -1.0 / 3.0 if not is_test else 1.0 / 3.0
 
-    torch.nn.init.trunc_normal_(freqs, mean, torch.pi / 6, 0.0, torch.pi)
+    torch.nn.init.trunc_normal_(freqs, mean, 1.0 / 3.0, -1.0, 1.0, generator=generator)
 
     return freqs
 
 
-def make_sin(freqs: torch.Tensor, amps: torch.Tensor, length: torch.Tensor):
+def make_sin(freqs: torch.Tensor, amps: torch.Tensor, length: int):
+    freqs = torch.pi * (freqs + 1.0) / 2.0
+    amps = (amps + 1.0) / 2.0
+
     n = torch.arange(length, device=freqs.device)
     phi = freqs[..., None] * n
     x = torch.sin(phi)
@@ -61,6 +81,7 @@ class KSinDataLoader:
         batch_size: int,
         batches_per_epoch: int,
         is_test: bool,
+        seed: int,
         device: Union[str, torch.device],
     ):
         self.k = k
@@ -79,6 +100,8 @@ class KSinDataLoader:
         self.batch_size = batch_size
         self.batches_per_epoch = batches_per_epoch
 
+        self.seed = seed
+        self.generator = torch.Generator(device=device)
         self.device = device
 
         self.is_test = is_test
@@ -86,30 +109,35 @@ class KSinDataLoader:
     def __len__(self):
         return self.batches_per_epoch
 
-    def _sample_parameters(self) -> Tuple[torch.Tensor, torch.Tensor]:
+    def _sample_parameters(
+        self, generator: Optional[torch.Generator] = None
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         if self.break_symmetry:
-            freqs = _sample_freqs_symmetry_broken(self.k, self.batch_size, self.device)
+            freqs = _sample_freqs_symmetry_broken(
+                self.k, self.batch_size, self.device, generator
+            )
         elif self.shift_test_distribution:
             freqs = _sample_freqs_shifted(
-                self.k, self.batch_size, self.is_test, self.device
+                self.k, self.batch_size, self.is_test, self.device, generator
             )
         else:
-            freqs = _sample_freqs(self.k, self.batch_size, self.device)
+            freqs = _sample_freqs(self.k, self.batch_size, self.device, generator)
 
-        amplitudes = _sample_amplitudes(self.k, self.batch_size, self.device)
+        amplitudes = _sample_amplitudes(self.k, self.batch_size, self.device, generator)
 
         if self.sort_frequencies:
             freqs, _ = torch.sort(freqs, dim=-1)
 
         return freqs, amplitudes
 
-    def _make_batch(self):
-        freqs, amps = self._sample_parameters()
+    def _make_batch(self, generator: Optional[torch.Generator] = None):
+        freqs, amps = self._sample_parameters(generator)
         sins = make_sin(freqs, amps, self.signal_length)
         params = torch.cat((freqs, amps), dim=-1)
-        return (sins, params)
+        return (sins, params, make_sin)
 
     def __iter__(self):
+        self.generator.manual_seed(self.seed)
         for _ in range(self.batches_per_epoch):
             yield self._make_batch()
 
@@ -132,6 +160,7 @@ class KSinDataModule(LightningDataModule):
         break_symmetry: bool = False,
         shift_test_distribution: bool = False,
         train_val_test_sizes: Tuple[int, int, int] = (100_000, 10_000, 10_000),
+        train_val_test_seeds: Tuple[int, int, int] = (123, 456, 789),
         batch_size: int = 1024,
     ):
         super().__init__()
@@ -145,18 +174,26 @@ class KSinDataModule(LightningDataModule):
         # dataset
         self.shift_test_distribution = shift_test_distribution
         self.train_size, self.val_size, self.test_size = train_val_test_sizes
+        self.train_seed, self.val_seed, self.test_seed = train_val_test_seeds
 
         # dataloader
         self.batch_size = batch_size
+
+        self.device = None
 
     def prepare_data(self):
         pass
 
     def setup(self, stage: Optional[str] = None):
         if self.trainer is None:
-            raise RuntimeError("KSinDataModule must be used with a Lightning Trainer.")
+            import warnings
 
-        device = self.trainer.strategy.root_device
+            warnings.warn(
+                "No trainer attached to datamodule, defaulting to device=None"
+            )
+            device = self.device
+        else:
+            device = self.trainer.strategy.root_device
 
         if stage == "fit":
             self.train = KSinDataLoader(
@@ -168,6 +205,7 @@ class KSinDataModule(LightningDataModule):
                 self.batch_size,
                 self.train_size // self.batch_size,
                 False,
+                self.train_seed,
                 device,
             )
             self.val = KSinDataLoader(
@@ -179,6 +217,7 @@ class KSinDataModule(LightningDataModule):
                 self.batch_size,
                 self.val_size // self.batch_size,
                 False,
+                self.val_seed,
                 device,
             )
         else:
@@ -191,6 +230,7 @@ class KSinDataModule(LightningDataModule):
                 self.batch_size,
                 self.test_size // self.batch_size,
                 True,
+                self.test_seed,
                 device,
             )
 

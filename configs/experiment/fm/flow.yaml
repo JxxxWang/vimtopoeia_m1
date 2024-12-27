@@ -1,9 +1,11 @@
 # @package _global_
 
 defaults:
-  - ksin/base
+  - fm/base
   - override /model: ksin_flow_cnn
-  - _self_
 
 run_name: rect_flow_cnn
 
+model:
+  vector_field:
+    field_dim: ${out_dim}

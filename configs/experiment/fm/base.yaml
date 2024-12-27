@@ -4,42 +4,37 @@
 # python train.py experiment=example
 
 defaults:
-  - override /data: ksin
-  - override /model: ksin_ff
+  - /experiment/fm/algorithm: conditional
+  - override /data: fm
   - override /callbacks: default
   - override /trainer: gpu
 
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
 
-experiment_name: ksin
+experiment_name: fm
+run_name: base
 
 tags:
-  - ksin
-  - mlp
-  - mse
-  - sort
-  - k_${data.k}
+  - fm
+  - algo_${data.algorithm}
 
 seed: 12345
-
-model:
-  loss_fn: mse
-
-data:
-  sort_frequencies: true
 
 trainer:
   min_epochs: 10
   max_epochs: 1000
   limit_val_batches: 0.0
+  check_val_every_n_epoch: 10
+  limit_val_batches: 10
 
 logger:
   wandb:
     tags: ${tags}
-    group: ${data.k}sin
-    name: ${data.k}sin_mlp_sort
+    group: fm_${data.algorithm}
+    name: fm_${data.algorithm}_${run_name}
 
 callbacks:
+  early_stopping: null
   model_checkpoint:
     monitor: train/loss

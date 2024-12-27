@@ -1,3 +1,5 @@
+from typing import Callable
+
 import torch
 from scipy.optimize import linear_sum_assignment
 from torchmetrics import Metric
@@ -19,9 +21,14 @@ class LogSpectralDistance(Metric):
         self.add_state("count", default=torch.tensor(0), dist_reduce_fx="sum")
         self.eps = eps
 
-    def update(self, predicted_params: torch.Tensor, target_signal: torch.Tensor):
+    def update(
+        self,
+        predicted_params: torch.Tensor,
+        target_signal: torch.Tensor,
+        synth_fn: Callable,
+    ):
         pred_freq, pred_amp = predicted_params.chunk(2, dim=-1)
-        pred_signal = make_sin(pred_freq, pred_amp, target_signal.shape[-1])
+        pred_signal = synth_fn(pred_freq, pred_amp, target_signal.shape[-1])
 
         pred_fft = torch.fft.rfft(pred_signal, norm="forward")
         target_fft = torch.fft.rfft(target_signal, norm="forward")
@@ -43,9 +50,14 @@ class SpectralDistance(Metric):
         self.add_state("count", default=torch.tensor(0), dist_reduce_fx="sum")
         self.eps = eps
 
-    def update(self, predicted_params: torch.Tensor, target_signal: torch.Tensor):
+    def update(
+        self,
+        predicted_params: torch.Tensor,
+        target_signal: torch.Tensor,
+        synth_fn: Callable,
+    ):
         pred_freq, pred_amp = predicted_params.chunk(2, dim=-1)
-        pred_signal = make_sin(pred_freq, pred_amp, target_signal.shape[-1])
+        pred_signal = synth_fn(pred_freq, pred_amp, target_signal.shape[-1])
 
         pred_fft = torch.fft.rfft(pred_signal, norm="forward")
         target_fft = torch.fft.rfft(target_signal, norm="forward")

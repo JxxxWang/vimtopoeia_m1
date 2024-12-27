@@ -1,0 +1,14 @@
+# @package _global_
+
+defaults:
+  - fm/base
+  - override /model: ksin_flow_cnn
+
+run_name: rect_flow_cnn_asym
+
+model:
+  vector_field:
+    field_dim: ${out_dim}
+
+data:
+  break_symmetry: true

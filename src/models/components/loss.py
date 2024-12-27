@@ -14,7 +14,7 @@ def chamfer_loss(predicted: torch.Tensor, target: torch.Tensor):
     predicted_tokens = params_to_tokens(predicted)
     target_tokens = params_to_tokens(target)
 
-    costs = torch.cdist(predicted_tokens, target_tokens)
+    costs = torch.cdist(predicted_tokens, target_tokens).square()
     min1 = costs.min(dim=1)[0].mean(dim=-1)
     min2 = costs.min(dim=2)[0].mean(dim=-1)
 

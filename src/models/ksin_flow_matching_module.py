@@ -1,17 +1,31 @@
 import math
 from functools import partial
 from typing import Any, Callable, Dict, Literal, Tuple
+from warnings import warn
 
+import ot as pot
 import torch
 from lightning import LightningModule
+from scipy.optimize import linear_sum_assignment
+from torch.nn.functional import soft_margin_loss
 
-from src.metrics import ChamferDistance, LogSpectralDistance
+from src.metrics import (
+    ChamferDistance,
+    LinearAssignmentDistance,
+    LogSpectralDistance,
+    SpectralDistance,
+)
+from src.utils.math import divmod
 
 
-def curve(x, a):
+def late_curve(x, a):
     if a == 0.0:
         return x
     return (1 - torch.exp(-a * x)) / (1 - math.exp(-a))
+
+
+def cosine_curve(x):
+    return 0.5 + 0.5 * torch.cos(torch.pi * (1 + x))
 
 
 def call_with_cfg(
@@ -52,12 +66,23 @@ class KSinFlowMatchingModule(LightningModule):
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler,
         cfg_dropout_rate: float = 0.1,
-        train_schedule: Literal["uniform", "bias_later", "bias_middle"] = "uniform",
-        sample_schedule_curve: float = 0.0,
+        p_time: Literal["uniform", "bias_later", "lognormal", "beta"] = "uniform",
+        w_time: Literal["none", "flatten", "reverse"] = "none",
+        coupling: Literal["uniform", "ot", "eot", "kabsch", "procrustes"] = "none",
+        oversample_ot: float = 1.0,
+        probability_path: Literal["rectified", "cfm", "fm"] = "rectified",
+        cfm_sigma: float = 1e-5,
+        fm_sigma: float = 1e-5,
+        rectified_sigma_min: float = 0.0,
+        sample_schedule: Literal["linear", "cosine", "late"] = "uniform",
+        late_sample_schedule_curve: float = 2.0,
         validation_sample_steps: int = 50,
         validation_cfg_strength: float = 4.0,
         test_sample_steps: int = 100,
         test_cfg_strength: float = 4.0,
+        sinkhorn_reg: float = 0.05,
+        sinkhorn_thresh: float = 1e-6,
+        ot_replace: bool = True,
         compile: bool = False,
     ):
         super().__init__()
@@ -69,9 +94,11 @@ class KSinFlowMatchingModule(LightningModule):
 
         self.val_lsd = LogSpectralDistance()
         self.val_chamfer = ChamferDistance()
+        # self.val_lad = LinearAssignmentDistance()
 
         self.test_lsd = LogSpectralDistance()
         self.test_chamfer = ChamferDistance()
+        self.test_lad = LinearAssignmentDistance()
 
     # def forward(self, x: torch.Tensor) -> torch.Tensor:
     #     return self.vector_field(x)
@@ -81,37 +108,243 @@ class KSinFlowMatchingModule(LightningModule):
         # so it's worth to make sure validation metrics don't store results from these checks
         self.val_lsd.reset()
         self.val_chamfer.reset()
+        # self.val_lad.reset()
 
     def _sample_time(self, n: int, device: torch.device) -> torch.Tensor:
-        if self.hparams.train_schedule == "uniform":
+        if self.hparams.p_time == "uniform":
             return torch.rand(n, 1, device=device)
-        elif self.hparams.train_schedule == "bias_later":
+        elif self.hparams.p_time == "bias_later":
             t = torch.rand(n, 1, device=device)
-            return curve(t, 1.0)
-        elif self.hparams.train_schedule == "bias_middle":
+            return late_curve(t, 1.0)
+        elif self.hparams.p_time == "lognormal":
             return torch.randn(n, 1, device=device).sigmoid()
+        elif self.hparams.p_time == "beta":
+            dist = torch.distributions.Beta(2.5, 1.0)
+            return dist.sample((n, 1)).to(device)
+        elif self.hparams.p_time == "extreme_beta":
+            dist = torch.distributions.Beta(10, 1.5)
+            return dist.sample((n, 1)).to(device)
+
+    def _weight_time(self, t: torch.Tensor) -> torch.Tensor:
+        if self.hparams.w_time == "none":
+            return torch.ones_like(t)
+        elif self.hparams.w_time == "flatten":
+            half_snr = torch.log(t / (1 - t))
+            weighting = torch.exp(-half_snr) + 1
+            inv_weighting = weighting.pow(-2)
+            return inv_weighting
+        elif self.hparams.w_time == "reverse":
+            half_snr = torch.log(t / (1 - t))
+            weighting = torch.exp(-half_snr) + 1
+            inv_weighting = weighting.pow(-4)
+            return inv_weighting
+
+    def _basic_sample(self, params: torch.Tensor, oversample: float = 1.0):
+        if oversample == 1.0:
+            x0 = torch.randn_like(params)
+        elif oversample < 1.0:
+            raise ValueError(f"oversample must be >= 1.0, got {oversample}")
+        else:
+            n = int(oversample * params.shape[0])
+            x0 = torch.randn(n, *params.shape[1:], device=params.device)
+        x1 = params
+
+        return x0, x1
+
+    def _eot_sample(self, params: torch.Tensor, z: torch.Tensor):
+        x0, x1 = self._basic_sample(params)
+
+        batch_size = z.shape[0]
+        a = pot.unif(x0.shape[0], type_as=x0)
+        b = pot.unif(x1.shape[0], type_as=x1)
+        costs = torch.cdist(x0, x1).square()
+
+        # cost should be invariant to dimension
+        costs = costs / x0.shape[-1]
+
+        ot_map = pot.sinkhorn(
+            a,
+            b,
+            costs,
+            self.hparams.sinkhorn_reg,
+            method="sinkhorn",
+            numItermax=1000,
+            stopThr=self.hparams.sinkhorn_thresh,
+        )
+        # # ot_map = pot.emd(a, b, costs, numThreads=4)
+        pi = ot_map.flatten()
+        samples = torch.multinomial(pi, batch_size, replacement=self.hparams.ot_replace)
+
+        i, j = divmod(samples, batch_size)
+
+        x0 = x0[i]
+        x1 = x1[j]
+        z = z[j]
+
+        return x0, x1, z
+
+    @torch.no_grad
+    def _ot_sample(self, params: torch.Tensor, z: torch.Tensor):
+        x0, x1 = self._basic_sample(params, oversample=self.hparams.oversample_ot)
+        costs = torch.cdist(x0, x1)
+        costs = costs.cpu().numpy()
+        row_ind, col_ind = linear_sum_assignment(costs)
+        row_ind = torch.from_numpy(row_ind).cuda()
+        col_ind = torch.from_numpy(col_ind).cuda()
+
+        x0 = x0[row_ind]
+        x1 = x1[col_ind]
+        z = z[col_ind]
+
+        return x0, x1, z
+
+    @torch.no_grad
+    def _kabsch_sample(self, params: torch.Tensor, z: torch.Tensor):
+        x0, x1 = self._basic_sample(params)
+        H = x0.transpose(-1, -2) @ x1
+        U, _, V = torch.svd(H)
+        d = torch.linalg.det(U) * torch.linalg.det(V)
+        S = torch.eye(U.shape[-1], device=U.device)
+        S[..., -1, -1] = d
+        R = U @ S @ V.transpose(-1, -2)
+
+        x0 = x0 @ R.transpose(-1, -2)
+
+        return x0, x1, z
+
+    @torch.no_grad
+    def _procrustes_sample(self, params: torch.Tensor, z: torch.Tensor):
+        x0, x1 = self._basic_sample(params)
+        H = x0.transpose(-1, -2) @ x1
+        U, _, V = torch.svd(H)
+        R = U @ V.transpose(-1, -2)
+        x0 = x0 @ R.transpose(-1, -2)
+
+        return x0, x1, z
+
+    @torch.no_grad
+    def _row_procrustes_sample(self, params: torch.Tensor, z: torch.Tensor):
+        x0, x1 = self._basic_sample(params)
+        H = x0 @ x1.transpose(-1, -2)
+        U, _, V = torch.svd(H)
+        R = U @ V.transpose(-1, -2)
+        x0 = R @ x0
+
+        return x0, x1, z
+
+    def _sample_x0_and_x1(self, params: torch.Tensor, z: torch.Tensor):
+        """Applies coupling according to the schemes in:
+        https://proceedings.mlr.press/v202/pooladian23a/pooladian23a.pdf#page=5.59
+        """
+        if self.hparams.coupling == "uniform":
+            x0, x1 = self._basic_sample(params)
+            return x0, x1, z
+        elif self.hparams.coupling == "ot":
+            return self._ot_sample(params, z)
+        elif self.hparams.coupling == "eot":
+            return self._eot_sample(params, z)
+        elif self.hparams.coupling == "kabsch":
+            return self._kabsch_sample(params, z)
+        elif self.hparams.coupling == "procrustes":
+            return self._procrustes_sample(params, z)
+        elif self.hparams.coupling == "row_procrustes":
+            return self._row_procrustes_sample(params, z)
+        else:
+            raise NotImplementedError(f"Unknown coupling {self.hparams.coupling}")
+
+    def _rectified_probability_path(
+        self, x0: torch.Tensor, x1: torch.Tensor, t: torch.Tensor
+    ):
+        x_t = x0 * (1 - t) * (1 - self.hparams.rectified_sigma_min) + x1 * t
+
+        return x_t
+
+    def _cfm_probability_path(
+        self, x0: torch.Tensor, x1: torch.Tensor, t: torch.Tensor
+    ):
+        mu_t = x0 * (1 - t) + x1 * t
+        sigma_t = self.hparams.cfm_sigma * torch.randn_like(mu_t)
+        x_t = mu_t + sigma_t
+
+        return x_t
+
+    def _fm_probability_path(self, x0: torch.Tensor, x1: torch.Tensor, t: torch.Tensor):
+        mu_t = x1 * t
+        sigma_t = t * self.hparams.fm_sigma - t + 1
+        sigma_t = sigma_t.sqrt() * torch.randn_like(mu_t)
+        x_t = mu_t + sigma_t
+
+        return x_t
+
+    def _sample_probability_path(
+        self, x0: torch.Tensor, x1: torch.Tensor, t: torch.Tensor
+    ):
+        if self.hparams.probability_path == "rectified":
+            x_t = self._rectified_probability_path(x0, x1, t)
+        elif self.hparams.probability_path == "cfm":
+            x_t = self._cfm_probability_path(x0, x1, t)
+        elif self.hparams.probability_path == "fm":
+            x_t = self._fm_probability_path(x0, x1, t)
+        else:
+            raise NotImplementedError(
+                f"Unknown probability path {self.hparams.probability_path}"
+            )
+
+        return x_t
+
+    def _rectified_vector_field(self, x0: torch.Tensor, x1: torch.Tensor):
+        return x1 - x0
+
+    def _cfm_vector_field(self, x0: torch.Tensor, x1: torch.Tensor):
+        return x1 - x0
+
+    def _fm_vector_field(self, x1: torch.Tensor, x_t: torch.Tensor, t: torch.Tensor):
+        numer = x1 - (1 - self.hparams.fm_sigma) * x_t
+        denom = 1 - (1 - self.hparams.fm_sigma) * t
+
+        return numer / denom
+
+    def _evaluate_target_field(
+        self, x0: torch.Tensor, x1: torch.Tensor, x_t: torch.Tensor, t: torch.Tensor
+    ):
+        if self.hparams.probability_path == "rectified":
+            target = self._rectified_vector_field(x0, x1)
+        elif self.hparams.probability_path == "cfm":
+            target = self._cfm_vector_field(x0, x1)
+        elif self.hparams.probability_path == "fm":
+            target = self._fm_vector_field(x1, x_t, t)
+        else:
+            raise NotImplementedError(
+                f"Unknown probability path {self.hparams.probability_path}"
+            )
+
+        return target
 
     def _train_step(self, batch: Tuple[torch.Tensor, torch.Tensor]):
-        x, y = batch
+        signal, params, _ = batch
 
         # Get conditioning vector
-        conditioning = self.encoder(x)
-        conditioning = self.vector_field.apply_dropout(
-            conditioning, self.hparams.cfg_dropout_rate
-        )
+        conditioning = self.encoder(signal)
+        z = self.vector_field.apply_dropout(conditioning, self.hparams.cfg_dropout_rate)
 
-        # Sample time-steps
-        t = self._sample_time(x.shape[0], x.device)
-        p0 = torch.randn_like(y)
+        with torch.no_grad():
+            # Sample time-steps
+            t = self._sample_time(signal.shape[0], signal.device)
+            w = self._weight_time(t)
 
-        # we sample a point along the trajectory
-        pt = p0 * (1 - t) + y * t
+            x0, x1, z = self._sample_x0_and_x1(params, z)
 
-        # our target velocity is the vector from the noise to the sample
-        target = y - p0
+            # we sample a point along the trajectory
+            x_t = self._sample_probability_path(x0, x1, t)
+            target = self._evaluate_target_field(x0, x1, x_t, t)
 
-        prediction = self.vector_field(pt, t, conditioning)
-        loss = torch.nn.functional.mse_loss(prediction, target)
+        prediction = self.vector_field(x_t, t, z)
+
+        # compute and weight loss
+        loss = (prediction - target).square().mean(dim=-1)
+        loss = loss * w
+        loss = loss.mean()
+
         return loss
 
     def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
@@ -122,13 +355,23 @@ class KSinFlowMatchingModule(LightningModule):
     def on_train_epoch_end(self) -> None:
         pass
 
+    def _warp_time(self, t: torch.Tensor) -> torch.Tensor:
+        if self.hparams.sample_schedule == "linear":
+            return t
+        elif self.hparams.sample_schedule == "cosine":
+            return cosine_curve(t)
+        elif self.hparams.sample_schedule == "late":
+            return late_curve(t, self.hparams.late_sample_schedule_curve)
+        else:
+            raise NotImplementedError
+
     def _sample(
         self,
         batch: Tuple[torch.Tensor, torch.Tensor],
         steps: int,
         cfg_strength: float,
     ):
-        x, y = batch
+        x, y, _ = batch
 
         sample = torch.randn_like(y)
         conditioning = self.encoder(x)
@@ -136,8 +379,8 @@ class KSinFlowMatchingModule(LightningModule):
         dt = 1.0 / steps
 
         for _ in range(steps):
-            warped_t = curve(t, self.hparams.sample_schedule_curve)
-            warped_t_plus_dt = curve(t + dt, self.hparams.sample_schedule_curve)
+            warped_t = self._warp_time(t)
+            warped_t_plus_dt = self._warp_time(t + dt)
             warped_dt = warped_t_plus_dt - warped_t
 
             sample = rk4_with_cfg(
@@ -159,14 +402,17 @@ class KSinFlowMatchingModule(LightningModule):
             self.hparams.validation_cfg_strength,
         )
 
+        *_, synth_fn = batch
         # update and log metrics
-        self.val_lsd(preds, inputs)
+        self.val_lsd(preds, inputs, synth_fn)
         self.val_chamfer(preds, targets)
+        # self.val_lad(preds, targets)
 
         self.log("val/lsd", self.val_lsd, on_step=False, on_epoch=True, prog_bar=True)
         self.log(
             "val/chamfer", self.val_chamfer, on_step=False, on_epoch=True, prog_bar=True
         )
+        # self.log("val/lad", self.val_lad, on_step=False, on_epoch=True, prog_bar=True)
 
     def on_validation_epoch_end(self):
         pass
@@ -176,8 +422,10 @@ class KSinFlowMatchingModule(LightningModule):
             batch, self.hparams.test_sample_steps, self.hparams.test_cfg_strength
         )
 
-        self.test_lsd(preds, inputs)
+        *_, synth_fn = batch
+        self.test_lsd(preds, inputs, synth_fn)
         self.test_chamfer(preds, targets)
+        self.test_lad(preds, targets)
         self.log("test/lsd", self.test_lsd, on_step=False, on_epoch=True, prog_bar=True)
         self.log(
             "test/chamfer",
@@ -186,6 +434,7 @@ class KSinFlowMatchingModule(LightningModule):
             on_epoch=True,
             prog_bar=True,
         )
+        self.log("test/lad", self.test_lad, on_step=False, on_epoch=True, prog_bar=True)
 
     def on_test_epoch_end(self) -> None:
         # TODO: implement metrics
