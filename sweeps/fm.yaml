@@ -13,10 +13,10 @@ metric:
 parameters:
   experiment:
     values:
-      - fm/flow
+      # - fm/flow
       # - fm/ffn_mse
       # - fm/ffn_asym
-      - fm/flow_asym
+      # - fm/flow_asym
       - fm/flow_fixed
       - fm/flow_fixed_asym
   'experiment/fm/algorithm':
