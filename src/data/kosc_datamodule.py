@@ -16,7 +16,7 @@ def polyblep_sawtooth(frequency: torch.Tensor, n: torch.Tensor) -> torch.Tensor:
     phase = dt * n
     phase.fmod_(1.0)
 
-    sawtooth = phase.mul_(2.0).sub_(1.0)
+    sawtooth = phase.mul(2.0).sub_(1.0)
 
     correction_low = (phase / dt - 1).square()
     correction_high = -(((phase - 1) / dt + 1).square())
@@ -35,7 +35,7 @@ def polyblep_square(frequency: torch.Tensor, n: torch.Tensor) -> torch.Tensor:
     phase = dt * n
     phase.fmod_(1.0)
 
-    shifted_phase = phase.sub_(0.5).fmod_(1.0)
+    shifted_phase = phase.sub(0.5) % 1.0
     square = torch.where(phase > 0.5, 1.0, -1.0)
 
     low_blep = phase < dt
@@ -45,8 +45,8 @@ def polyblep_square(frequency: torch.Tensor, n: torch.Tensor) -> torch.Tensor:
 
     correction_low = (phase / dt - 1).square_() * low_blep
     correction_mid_low = -((shifted_phase / dt - 1).square_()) * mid_low_blep
-    correction_mid_high = -(((shifted_phase - 1) / dt + 1).square_()) * mid_high_blep
-    correction_high = ((phase - 1) / dt + 1).square_() * high_blep
+    correction_mid_high = (((shifted_phase - 1) / dt + 1).square_()) * mid_high_blep
+    correction_high = -((phase - 1) / dt + 1).square_() * high_blep
 
     square.add_(correction_low).add_(correction_mid_low).add_(correction_mid_high).add_(
         correction_high
