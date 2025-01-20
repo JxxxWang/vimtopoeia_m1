@@ -75,7 +75,6 @@ def make_sig(params: torch.Tensor, length: int, break_symmetry: bool = False):
     min_freq = 2 * torch.pi * 20.0 / 44100.0
     max_freq = 2 * torch.pi * 4000.0 / 44100.0
     freqs = min_freq + (max_freq - min_freq) * freqs
-    print(freqs)
 
     amps = (amps + 1.0) / 2.0
 
