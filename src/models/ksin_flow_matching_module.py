@@ -9,12 +9,8 @@ from lightning import LightningModule
 from scipy.optimize import linear_sum_assignment
 from torch.nn.functional import soft_margin_loss
 
-from src.metrics import (
-    ChamferDistance,
-    LinearAssignmentDistance,
-    LogSpectralDistance,
-    SpectralDistance,
-)
+from src.metrics import (ChamferDistance, LinearAssignmentDistance,
+                         LogSpectralDistance, SpectralDistance)
 from src.utils.math import divmod
 
 
@@ -85,6 +81,7 @@ class KSinFlowMatchingModule(LightningModule):
         ot_replace: bool = True,
         freeze_for_first_n_steps: int = 0,
         compile: bool = False,
+        params_per_token: int = 2,
     ):
         super().__init__()
 
@@ -94,12 +91,12 @@ class KSinFlowMatchingModule(LightningModule):
         self.vector_field = vector_field
 
         self.val_lsd = LogSpectralDistance()
-        self.val_chamfer = ChamferDistance()
+        self.val_chamfer = ChamferDistance(params_per_token)
         # self.val_lad = LinearAssignmentDistance()
 
         self.test_lsd = LogSpectralDistance()
-        self.test_chamfer = ChamferDistance()
-        self.test_lad = LinearAssignmentDistance()
+        self.test_chamfer = ChamferDistance(params_per_token)
+        self.test_lad = LinearAssignmentDistance(params_per_token)
 
     # def forward(self, x: torch.Tensor) -> torch.Tensor:
     #     return self.vector_field(x)

@@ -30,3 +30,6 @@ callbacks:
   model_checkpoint:
     monitor: val/lsd
   early_stopping: null
+
+model:
+  params_per_token: 3

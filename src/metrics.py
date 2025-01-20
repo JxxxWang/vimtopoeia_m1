@@ -72,15 +72,16 @@ class SpectralDistance(Metric):
 
 
 class ChamferDistance(Metric):
-    def __init__(self, **kwargs):
+    def __init__(self, params_per_token: int, **kwargs):
         super().__init__(**kwargs)
         self.add_state(
             "chamfer_distance", default=torch.tensor(0.0), dist_reduce_fx="sum"
         )
         self.add_state("count", default=torch.tensor(0), dist_reduce_fx="sum")
+        self.params_per_token = params_per_token
 
     def update(self, predicted: torch.Tensor, target: torch.Tensor):
-        self.chamfer_distance += chamfer_loss(predicted, target)
+        self.chamfer_distance += chamfer_loss(predicted, target, self.params_per_token)
         self.count += 1
 
     def compute(self):
@@ -88,7 +89,7 @@ class ChamferDistance(Metric):
 
 
 class LinearAssignmentDistance(Metric):
-    def __init__(self, **kwargs):
+    def __init__(self, params_per_token: int, **kwargs):
         super().__init__(**kwargs)
         self.add_state(
             "linear_assignment_distance",
@@ -96,10 +97,11 @@ class LinearAssignmentDistance(Metric):
             dist_reduce_fx="sum",
         )
         self.add_state("count", default=torch.tensor(0), dist_reduce_fx="sum")
+        self.params_per_token = params_per_token
 
     def update(self, predicted: torch.Tensor, target: torch.Tensor):
-        predicted_tokens = params_to_tokens(predicted)
-        target_tokens = params_to_tokens(target)
+        predicted_tokens = params_to_tokens(predicted, self.params_per_token)
+        target_tokens = params_to_tokens(target, self.params_per_token)
 
         dist = torch.cdist(predicted_tokens, target_tokens)
         dist_c = dist.detach().cpu()

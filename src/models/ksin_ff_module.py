@@ -3,7 +3,8 @@ from typing import Any, Callable, Dict, Tuple
 import torch
 from lightning import LightningModule
 
-from src.metrics import ChamferDistance, LinearAssignmentDistance, LogSpectralDistance, SpectralDistance
+from src.metrics import (ChamferDistance, LinearAssignmentDistance,
+                         LogSpectralDistance, SpectralDistance)
 from src.models.components.loss import ChamferLoss
 
 
@@ -15,6 +16,7 @@ class KSinFeedForwardModule(LightningModule):
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler,
         compile: bool,
+        params_per_token: int = 2,
     ):
         super().__init__()
 
@@ -30,11 +32,11 @@ class KSinFeedForwardModule(LightningModule):
             raise NotImplementedError(f"Unsupported loss function: {loss_fn}")
 
         self.val_lsd = LogSpectralDistance()
-        self.val_chamfer = ChamferDistance()
+        self.val_chamfer = ChamferDistance(params_per_token)
 
         self.test_lsd = LogSpectralDistance()
-        self.test_chamfer = ChamferDistance()
-        self.test_lad = LinearAssignmentDistance()
+        self.test_chamfer = ChamferDistance(params_per_token)
+        self.test_lad = LinearAssignmentDistance(params_per_token)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.net(x)
