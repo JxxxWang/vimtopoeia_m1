@@ -28,3 +28,9 @@ POT
 einops
 threadpoolctl
 matplotlib
+
+mido
+pedalboard
+librosa
+loguru
+pyloudnorm

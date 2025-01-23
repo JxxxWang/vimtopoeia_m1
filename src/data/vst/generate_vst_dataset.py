@@ -325,6 +325,4 @@ def main(
 
 
 if __name__ == "__main__":
-    plugin_path = "/Library/Audio/Plug-Ins/VST3/Surge XT.vst3"
-
-    workers = 8
+    main()
