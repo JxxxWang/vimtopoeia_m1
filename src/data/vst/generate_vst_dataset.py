@@ -15,7 +15,6 @@ import mido
 import numpy as np
 import rootutils
 from loguru import logger
-from mpi4py import MPI
 from pedalboard import VST3Plugin
 from pedalboard.io import AudioFile
 from pyloudnorm import Meter
@@ -245,7 +244,6 @@ def save_sample(
 def make_dataset(
     hdf5_file: h5py.File,
     num_samples: int,
-    offset: int,
     plugin_path: str = "plugins/Surge XT.vst3",
     preset_path: str = "presets/surge-base.vstpreset",
     sample_rate: float = 44100.0,
@@ -264,16 +262,19 @@ def make_dataset(
         "audio",
         (num_samples, channels, sample_rate * signal_duration_seconds),
         dtype=np.float32,
+        compression="gzip",
     )
     mel_dataset = hdf5_file.create_dataset(
         "mel_spec",
         (num_samples, 2, 128, 401),
         dtype=np.float32,
+        compression="gzip",
     )
     param_dataset = hdf5_file.create_dataset(
         "param_array",
         (num_samples, len(SURGE_XT_PARAM_SPEC) + 1),  # +1 for MIDI note
         dtype=np.float32,
+        compression="gzip",
     )
 
     audio_dataset.attrs["min_pitch"] = min_pitch
@@ -297,7 +298,7 @@ def make_dataset(
             channels=channels,
             min_loudness=min_loudness,
         )
-        save_sample(sample, audio_dataset, mel_dataset, param_dataset, offset + i)
+        save_sample(sample, audio_dataset, mel_dataset, param_dataset, i)
 
 
 @click.command()
@@ -327,18 +328,10 @@ def main(
     signal_duration_seconds: float = 4.0,
     min_loudness: float = -55.0,
 ):
-    comm = MPI.COMM_WORLD
-    num_workers = comm.Get_size()
-    rank = comm.Get_rank()
-
-    samples_per_worker = num_samples // num_workers
-
-    with h5py.File(data_file, "w", driver="mpio", comm=comm) as f:
-        offset = rank * samples_per_worker
+    with h5py.File(data_file, "w") as f:
         make_dataset(
             f,
-            samples_per_worker,
-            offset,
+            num_samples,
             plugin_path,
             preset_path,
             sample_rate,
