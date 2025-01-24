@@ -9,11 +9,13 @@ from pathlib import Path
 from typing import Callable
 
 import click
+import h5py
 import librosa
 import mido
 import numpy as np
 import rootutils
 from loguru import logger
+from mpi4py import MPI
 from pedalboard import VST3Plugin
 from pedalboard.io import AudioFile
 from pyloudnorm import Meter
@@ -111,6 +113,12 @@ def _hash_params(params: dict[str, float]) -> str:
     param_str = "".join(param_str)
     md5 = hashlib.md5()
     md5.update(param_str.encode("utf-8"))
+    return md5.hexdigest()
+
+
+def _hash_float(v: float) -> str:
+    md5 = hashlib.md5()
+    md5.update(str(v).encode("utf-8"))
     return md5.hexdigest()
 
 
@@ -222,25 +230,22 @@ def write_wav(audio: np.ndarray, path: str, sample_rate: float, channels: int) -
         f.write(audio.T)
 
 
-def save_sample(sample: VSTDataSample, data_dir: str) -> None:
-    """data_dir will contain two subdirectories: audio and features."""
-    data_dir = Path(data_dir)
-    audio_dir = data_dir / "audio"
-    feature_dir = data_dir / "features"
-
-    audio_dir.mkdir(parents=True, exist_ok=True)
-    feature_dir.mkdir(parents=True, exist_ok=True)
-
-    audio_path = audio_dir / f"{sample.identifier}.wav"
-    feature_path = feature_dir / f"{sample.identifier}.npz"
-
-    write_wav(sample.audio, audio_path, sample.sample_rate, sample.channels)
-    np.savez(feature_path, spectrogram=sample.mel_spec, param_array=sample.param_array)
+def save_sample(
+    sample: VSTDataSample,
+    audio_dataset: h5py.Dataset,
+    mel_dataset: h5py.Dataset,
+    param_dataset: h5py.Dataset,
+    idx: int,
+) -> None:
+    audio_dataset[idx, :, :] = sample.audio
+    mel_dataset[idx, :, :] = sample.mel_spec
+    param_dataset[idx, :] = sample.param_array
 
 
 def make_dataset(
+    hdf5_file: h5py.File,
     num_samples: int,
-    data_dir: str,
+    offset: int,
     plugin_path: str = "plugins/Surge XT.vst3",
     preset_path: str = "presets/surge-base.vstpreset",
     sample_rate: float = 44100.0,
@@ -255,7 +260,35 @@ def make_dataset(
     plugin = load_plugin(plugin_path)
     load_preset(plugin, preset_path)
 
-    for _ in trange(num_samples):
+    audio_dataset = hdf5_file.create_dataset(
+        "audio",
+        (num_samples, channels, sample_rate * signal_duration_seconds),
+        dtype=np.float32,
+        compression="lzf",
+    )
+    mel_dataset = hdf5_file.create_dataset(
+        "mel_spec",
+        (num_samples, channels, signal_duration_seconds),
+        dtype=np.float32,
+        compression="lzf",
+    )
+    param_dataset = hdf5_file.create_dataset(
+        "param_array",
+        (num_samples, len(SURGE_XT_PARAM_SPEC) + 1),  # +1 for MIDI note
+        dtype=np.float32,
+        compression="lzf",
+    )
+
+    audio_dataset.attrs["min_pitch"] = min_pitch
+    audio_dataset.attrs["max_pitch"] = max_pitch
+    audio_dataset.attrs["velocity"] = velocity
+    audio_dataset.attrs["note_duration_seconds"] = note_duration_seconds
+    audio_dataset.attrs["signal_duration_seconds"] = signal_duration_seconds
+    audio_dataset.attrs["sample_rate"] = sample_rate
+    audio_dataset.attrs["channels"] = channels
+    audio_dataset.attrs["min_loudness"] = min_loudness
+
+    for i in trange(num_samples):
         sample = generate_sample(
             plugin,
             min_pitch=min_pitch,
@@ -267,13 +300,12 @@ def make_dataset(
             channels=channels,
             min_loudness=min_loudness,
         )
-        save_sample(sample, data_dir)
+        save_sample(sample, audio_dataset, mel_dataset, param_dataset, offset + i)
 
 
 @click.command()
 @click.argument("data_dir", type=str, required=True)
 @click.argument("num_samples", type=int, required=True)
-@click.option("--num_workers", "-w", type=int, default=8)
 @click.option("--plugin_path", "-p", type=str, default="plugins/Surge XT.vst3")
 @click.option("--preset_path", "-r", type=str, default="presets/surge-base.vstpreset")
 @click.option("--sample_rate", "-s", type=float, default=44100.0)
@@ -285,9 +317,8 @@ def make_dataset(
 @click.option("--signal_duration_seconds", "-d", type=float, default=4.0)
 @click.option("--min_loudness", "-l", type=float, default=-55.0)
 def main(
-    data_dir: str,
+    data_file: str,
     num_samples: int,
-    num_workers: int = 8,
     plugin_path: str = "plugins/Surge XT.vst3",
     preset_path: str = "presets/surge-base.vstpreset",
     sample_rate: float = 44100.0,
@@ -299,15 +330,18 @@ def main(
     signal_duration_seconds: float = 4.0,
     min_loudness: float = -55.0,
 ):
-    executor = ProcessPoolExecutor(max_workers=num_workers)
+    comm = MPI.COMM_WORLD
+    num_workers = comm.Get_size()
+    rank = comm.Get_rank()
+
     samples_per_worker = num_samples // num_workers
 
-    futures = []
-    for i in range(num_workers):
-        f = executor.submit(
-            make_dataset,
+    with h5py.File(data_file, "w", driver="mpio", comm=comm) as f:
+        offset = rank * samples_per_worker
+        make_dataset(
+            f,
             samples_per_worker,
-            data_dir,
+            offset,
             plugin_path,
             preset_path,
             sample_rate,
@@ -319,9 +353,6 @@ def main(
             signal_duration_seconds,
             min_loudness,
         )
-        futures.append(f)
-
-    wait(futures)
 
 
 if __name__ == "__main__":
