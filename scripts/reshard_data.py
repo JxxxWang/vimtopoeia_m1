@@ -1,30 +1,38 @@
 import h5py
 import numpy as np
 
-for i in range(22):
-    shard = h5py.File(
-        f"/data/home/acw585/data_scratch/surge/surgext_train_{i}.hdf5", "w"
-    )
-    audio_ds = shard.create_dataset(
-        "audio", (100_000, 2, 44100 * 4), dtype=np.float16, compression="gzip"
-    )
-    mel_ds = shard.create_dataset(
-        "mel_spec", (100_000, 2, 128, 401), dtype=np.float32, compression="gzip"
-    )
-    param_ds = shard.create_dataset(
-        "param_array", (100_000, 189), dtype=np.float32, compression="gzip"
-    )
+splits = dict(
+    train=(0, 228),
+    val=(229, 238),
+    test=(239, 248),
+)
 
-    print(f"Starting shard {i}.................")
-    for j in range(10):
-        f_idx = i * 10 + j
-        f = h5py.File(f"/data/home/acw585/data_scratch/surge/shard-{f_idx}.hdf5", "r")
+for split, (lo, hi) in splits.items():
+    split_len = len(hi - lo) * 10_000
 
-        idx_lo = j * 10_000
-        idx_hi = (j + 1) * 10_000
-        print(f"Copying audio from {idx_lo} to {idx_hi}")
-        audio_ds[idx_lo:idx_hi, :, :] = f["audio"]
-        print(f"Copying mel_spec from {idx_lo} to {idx_hi}")
-        mel_ds[idx_lo:idx_hi, :, :, :] = f["mel_spec"]
-        print(f"Copying param_array from {idx_lo} to {idx_hi}")
-        param_ds[idx_lo:idx_hi, :] = f["param_array"]
+    vl_audio = h5py.VirtualLayout(shape=(split_len, 2, 44100 * 4), dtype=np.float32)
+    vl_mel = h5py.VirtualLayout(shape=(split_len, 2, 128, 401), dtype=np.float32)
+    vl_param = h5py.VirtualLayout(shape=(split_len, 189), dtype=np.float32)
+
+    for i in range(lo, hi + 1):
+        source_name = f"/data/home/acw585/data_scratch/surge/shard-{i}.hdf5"
+        vs_audio = h5py.VirtualSource(
+            source_name, "audio", dtype=np.float32, shape=(10_000, 2, 44100 * 4)
+        )
+        vs_mel = h5py.VirtualSource(
+            source_name, "mel_spec", dtype=np.float32, shape=(10_000, 2, 128, 401)
+        )
+        vs_param = h5py.VirtualSource(
+            source_name, "param_array", dtype=np.float32, shape=(10_000, 189)
+        )
+
+        range_start = i * 10_000
+        range_end = (i + 1) * 10_000
+        vl_audio[range_start:range_end, :, :] = vs_audio
+        vl_mel[range_start:range_end, :, :, :] = vs_mel
+        vl_param[range_start:range_end, :] = vs_param
+
+    with h5py.File(f"/data/home/acw585/data_scratch/surge/{split}.hdf5", "w") as f:
+        f.create_virtual_dataset("audio", vl_audio)
+        f.create_virtual_dataset("mel_spec", vl_mel)
+        f.create_virtual_dataset("param_array", vl_param)
