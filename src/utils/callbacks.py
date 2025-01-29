@@ -291,4 +291,5 @@ class PlotLearntProjection(Callback):
         if trainer.global_step % self.every_n_steps != 0:
             return
 
-        self._do_plotting(trainer, pl_module)
+        with torch.no_grad():
+            self._do_plotting(trainer, pl_module)
