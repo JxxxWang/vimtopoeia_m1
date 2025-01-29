@@ -153,3 +153,6 @@ configs/local/default.yaml
 # Aim logging
 .aim
 notebooks/
+vst_data/
+.nvim/
+.DS_Store
