@@ -20,10 +20,17 @@ class SurgeXTDataset(torch.utils.data.Dataset):
         read_audio: bool = False,
         use_saved_mean_and_variance: bool = True,
         rescale_params: bool = True,
+        fake: bool = False,
     ):
-        self.dataset_file = h5py.File(dataset_file, "r")
         self.read_audio = read_audio
         self.rescale_params = rescale_params
+
+        if fake:
+            self.dataset_file = None
+            self.fake = True
+            return
+
+        self.dataset_file = h5py.File(dataset_file, "r")
 
         if use_saved_mean_and_variance:
             self._load_dataset_statistics(dataset_file)
@@ -49,9 +56,29 @@ class SurgeXTDataset(torch.utils.data.Dataset):
         return data_dir / "stats.npz"
 
     def __len__(self):
+        if self.fake:
+            return 10000
+
         return self.dataset_file["audio"].shape[0]
 
+    def _get_fake_item(self):
+        audio = torch.randn(2, 44100 * 4) if not self.read_audio else None
+        mel_spec = torch.randn(2, 128, 401)
+        param_array = torch.rand(189)
+
+        if self.rescale_params:
+            param_array = param_array * 2 - 1
+
+        return dict(
+            mel_spec=mel_spec,
+            params=param_array,
+            audio=audio,
+        )
+
     def __getitem__(self, idx):
+        if self.fake:
+            return self._get_fake_item()
+
         if self.read_audio:
             audio = self.dataset_file["audio"][idx, :, :]
         else:
@@ -80,6 +107,7 @@ class SurgeDataModule(LightningDataModule):
         batch_size: int = 1024,
         ot: bool = True,
         num_workers: int = 0,
+        fake: bool = False,
     ):
         super().__init__()
 
@@ -88,19 +116,23 @@ class SurgeDataModule(LightningDataModule):
         self.batch_size = batch_size
         self.ot = ot
         self.num_workers = num_workers
+        self.fake = fake
 
     def setup(self, stage: Optional[str] = None):
         self.train_dataset = SurgeXTDataset(
             self.dataset_root / "train.h5",
             use_saved_mean_and_variance=self.use_saved_mean_and_variance,
+            fake=self.fake,
         )
         self.val_dataset = SurgeXTDataset(
             self.dataset_root / "val.h5",
             use_saved_mean_and_variance=self.use_saved_mean_and_variance,
+            fake=self.fake,
         )
         self.test_dataset = SurgeXTDataset(
             self.dataset_root / "test.h5",
             use_saved_mean_and_variance=self.use_saved_mean_and_variance,
+            fake=self.fake,
         )
 
     def train_dataloader(self):

@@ -5,7 +5,7 @@
 
 defaults:
   - override /data: surge
-  - override /callbacks: default
+  - override /callbacks: default_surge
   - override /trainer: gpu
   - _self_
 
@@ -28,3 +28,6 @@ callbacks:
   model_checkpoint:
     monitor: null
   early_stopping: null
+
+trainer:
+  limit_val_batches: 0
