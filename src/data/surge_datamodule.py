@@ -110,7 +110,7 @@ class SurgeXTDataset(torch.utils.data.Dataset):
         noise = torch.randn_like(param_array)
         if self.ot:
             noise, param_array, mel_spec, audio = _hungarian_match(
-                mel_spec, param_array, noise, audio
+                noise, param_array, mel_spec, audio
             )
 
         return dict(
