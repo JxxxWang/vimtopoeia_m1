@@ -26,12 +26,12 @@ class SurgeXTDataset(torch.utils.data.Dataset):
         self.rescale_params = rescale_params
 
         if use_saved_mean_and_variance:
-            self._load_dataset_statistics()
+            self._load_dataset_statistics(dataset_file)
 
-    def _load_dataset_statistics(self):
+    def _load_dataset_statistics(self, dataset_file: Union[str, Path]):
         # for /path/to/train.h5 we would expect to find /path/to/stats.npz
         # if not, we throw an error
-        stats_file = SurgeXTDataset.get_stats_file_path(self.dataset_file)
+        stats_file = SurgeXTDataset.get_stats_file_path(dataset_file)
         if not stats_file.exists():
             raise FileNotFoundError(
                 f"Could not find statistics file {stats_file}. \n"
