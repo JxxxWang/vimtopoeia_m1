@@ -31,3 +31,4 @@ callbacks:
 
 trainer:
   limit_val_batches: 10
+  precision: bf16-mixed
