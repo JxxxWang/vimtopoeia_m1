@@ -156,15 +156,15 @@ class WithinChunkShuffledSampler(torch.utils.data.Sampler):
         indices = [
             np.random.permutation(self.chunk_size) for _ in range(self.num_shards)
         ]
+        max_idx = self.chunk_size - (self.chunk_size % self.batch_size)
+        indices = [idxs[:max_idx] for idxs in indices]
         indices = [idxs + i * self.chunk_size for i, idxs in enumerate(indices)]
-        random.shuffle(indices)  # so we don't always chop off the same chunk
 
         indices = np.concatenate(indices, axis=0)
-        total_indices = indices.shape[-1]
-        max_indices = total_indices - (total_indices % self.batch_size)
-        indices = indices[:max_indices]
-
         indices = np.reshape(indices, (-1, self.batch_size))
+
+        # shuffle by rows
+        np.random.shuffle(indices)
 
         for row in indices:
             row.sort()
