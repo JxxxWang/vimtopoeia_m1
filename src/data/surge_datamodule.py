@@ -109,7 +109,7 @@ class SurgeXTDataset(torch.utils.data.Dataset):
             mel_spec = (mel_spec - self.mean) / self.std
         mel_spec = torch.from_numpy(mel_spec).to(dtype=torch.float32)
 
-        param_array = self._index_dataset(self.dataset_file["params"], idx)
+        param_array = self._index_dataset(self.dataset_file["param_array"], idx)
         if self.rescale_params:
             param_array = param_array * 2 - 1
         param_array = torch.from_numpy(param_array).to(dtype=torch.float32)
