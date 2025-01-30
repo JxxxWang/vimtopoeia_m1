@@ -30,4 +30,4 @@ callbacks:
   early_stopping: null
 
 trainer:
-  limit_val_batches: 0
+  limit_val_batches: 10
