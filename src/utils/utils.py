@@ -2,6 +2,7 @@ import warnings
 from importlib.util import find_spec
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+import torch
 from lightning import LightningModule
 from lightning.pytorch.loggers import Logger, WandbLogger
 from omegaconf import DictConfig, OmegaConf
@@ -45,6 +46,12 @@ def extras(cfg: DictConfig) -> None:
     if cfg.extras.get("print_config"):
         log.info("Printing config tree with Rich! <cfg.extras.print_config=True>")
         rich_utils.print_config_tree(cfg, resolve=True, save_to_file=True)
+
+    if precision := cfg.extras.get("float32_matmul_precision", False):
+        log.info(
+            "Enabling float32 matmul precision! <cfg.extras.float32_matmul_precision=True>"
+        )
+        torch.set_float32_matmul_precision(precision)
 
 
 def task_wrapper(task_func: Callable) -> Callable:
