@@ -1,25 +1,9 @@
 import math
 from functools import partial
-from typing import Any, Callable, Dict, Literal, Tuple
+from typing import Any, Callable, Dict, Optional, Tuple
 
-import ot as pot
 import torch
 from lightning import LightningModule
-from scipy.optimize import linear_sum_assignment
-
-from src.metrics import (ChamferDistance, LinearAssignmentDistance,
-                         LogSpectralDistance)
-from src.utils.math import divmod
-
-
-def late_curve(x, a):
-    if a == 0.0:
-        return x
-    return (1 - torch.exp(-a * x)) / (1 - math.exp(-a))
-
-
-def cosine_curve(x):
-    return 0.5 + 0.5 * torch.cos(torch.pi * (1 + x))
 
 
 def call_with_cfg(
@@ -176,16 +160,16 @@ class SurgeFlowMatchingModule(LightningModule):
 
     def _sample(
         self,
-        batch: Tuple[torch.Tensor, torch.Tensor],
+        conditioning: Optional[torch.Tensor],
+        noise: torch.Tensor,
         steps: int,
         cfg_strength: float,
     ):
-        x, y, sample, _ = batch
-
-        # sample = torch.randn_like(y)
-        conditioning = self.encoder(x)
-        t = torch.zeros(sample.shape[0], 1, device=sample.device)
+        conditioning = self.encoder(conditioning)
+        t = torch.zeros(noise.shape[0], 1, device=noise.device)
         dt = 1.0 / steps
+
+        sample = noise
 
         for _ in range(steps):
             warped_t = self._warp_time(t)
@@ -202,14 +186,21 @@ class SurgeFlowMatchingModule(LightningModule):
             )
             t = t + dt
 
-        return sample, y, x
+        return sample
 
     def validation_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
-        preds, targets, inputs = self._sample(
-            batch,
+        pred_params = self._sample(
+            batch["mel_spec"],
+            torch.randn_like(batch["params"]),
             self.hparams.validation_sample_steps,
             self.hparams.validation_cfg_strength,
         )
+
+        param_mse = (pred_params - batch["params"]).square().mean()
+        self.log("val/param_mse", param_mse, on_step=False, on_epoch=True, prog_bar=True)
+
+        return param_mse
+
 
     def on_validation_epoch_end(self):
         pass
