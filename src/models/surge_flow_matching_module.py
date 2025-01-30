@@ -197,10 +197,11 @@ class SurgeFlowMatchingModule(LightningModule):
         )
 
         param_mse = (pred_params - batch["params"]).square().mean()
-        self.log("val/param_mse", param_mse, on_step=False, on_epoch=True, prog_bar=True)
+        self.log(
+            "val/param_mse", param_mse, on_step=False, on_epoch=True, prog_bar=True
+        )
 
         return param_mse
-
 
     def on_validation_epoch_end(self):
         pass
@@ -245,7 +246,7 @@ class SurgeFlowMatchingModule(LightningModule):
                 "lr_scheduler": {
                     "scheduler": scheduler,
                     # "monitor": "val/chamfer",
-                    "interval": "epoch",
+                    "interval": "step",
                     "frequency": 1,
                 },
             }
