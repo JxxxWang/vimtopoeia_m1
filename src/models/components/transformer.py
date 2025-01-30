@@ -295,24 +295,6 @@ def slerp(
     return s0 * x + s1 * y
 
 
-class SinusoidalEncoding(nn.Module):
-    """A sinusoidal encoding of scalar values centered around zero."""
-
-    def __init__(self, d_model: int):
-        super().__init__()
-
-        k = torch.arange(0, d_model // 2) + 1
-        basis = 1 / torch.pow(10000, 2 * k / d_model)
-
-        self.register_buffer("basis", basis[None, None, :])
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # x has shape (b t)
-        cos_part = torch.cos(x[:, :, None] * self.basis)
-        sin_part = torch.sin(x[:, :, None] * self.basis)
-        return torch.cat([cos_part, sin_part], dim=-1)
-
-
 class SinsPlusSinkhornAttn(nn.Module):
     """
     Each scalar parameter is given a sinusoidal embedding. Each parameter is given a
@@ -582,6 +564,47 @@ class MultiheadAttention(nn.Module):
         return self.out_proj(x)
 
 
+class SinusoidalEncoding(nn.Module):
+    """A sinusoidal encoding of scalar values centered around zero."""
+
+    def __init__(self, d_model: int):
+        super().__init__()
+
+        half = d_model // 2
+        k = torch.arange(0, half)
+        basis = 1 / torch.pow(10000, k / half)
+
+        self.register_buffer("basis", basis[None, None, :])
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # x has shape (b t)
+        cos_part = torch.cos(x[:, :, None] * self.basis)
+        sin_part = torch.sin(x[:, :, None] * self.basis)
+        return torch.cat([cos_part, sin_part], dim=-1)
+
+
+class ConcatConditioning(nn.Module):
+    def forward(self, z: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
+        return torch.cat([z, t], dim=-1)
+
+
+class SinusoidalConditioning(nn.Module):
+    def __init__(self, d_model: int, d_enc: int):
+        super().__init__()
+        self.d_model = d_model
+        self.sin = SinusoidalEncoding(d_enc)
+        self.mlp = nn.Sequential(
+            nn.Linear(d_enc, d_model),
+            nn.SiLU(),
+            nn.Linear(d_model, d_model),
+        )
+
+    def forward(self, z: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
+        t = self.sin(t)
+        t = self.mlp(t)
+        return z + t
+
+
 class ApproxEquivTransformer(nn.Module):
     def __init__(
         self,
@@ -596,6 +619,8 @@ class ApproxEquivTransformer(nn.Module):
         learn_projection: bool = False,
         pe_type: Literal["initial", "layerwise"] = "initial",
         pe_penalty: float = 0.0,
+        time_encoding: Literal["sinusoidal", "scalar"] = "scalar",
+        d_enc: int = 256,
         projection_penalty: float = 0.0,
         norm: Literal["layer", "rms"] = "layer",
         skip_first_norm: bool = False,
@@ -603,11 +628,16 @@ class ApproxEquivTransformer(nn.Module):
     ):
         super().__init__()
 
+        self.cfg_dropout_token = nn.Parameter(torch.randn(1, conditioning_dim))
+
+        conditioning_dim = (
+            conditioning_dim + 1 if time_encoding == "scalar" else conditioning_dim
+        )
         self.layers = nn.ModuleList(
             [
                 DiTransformerBlock(
                     d_model,
-                    conditioning_dim + 1,
+                    conditioning_dim,
                     num_heads,
                     d_ff,
                     norm,
@@ -617,6 +647,14 @@ class ApproxEquivTransformer(nn.Module):
                 for i in range(num_layers)
             ]
         )
+
+        if time_encoding == "sinusoidal":
+            assert conditioning_dim == d_model, "conditioning_dim must match d_model"
+            self.conditioning = SinusoidalConditioning(d_model, d_enc)
+        elif time_encoding == "scalar":
+            self.conditioning = ConcatConditioning()
+        else:
+            raise ValueError("time_encoding must be 'sinusoidal' or 'scalar'")
 
         if pe_type == "initial":
             self.pe = PositionalEncoding(d_model, num_tokens)
@@ -642,8 +680,6 @@ class ApproxEquivTransformer(nn.Module):
 
         self.pe_penalty = pe_penalty
         self.projection_penalty = projection_penalty
-
-        self.cfg_dropout_token = nn.Parameter(torch.randn(1, conditioning_dim))
 
     def apply_dropout(self, z: torch.tensor, rate: float = 0.1):
         if rate == 0.0:
@@ -680,7 +716,8 @@ class ApproxEquivTransformer(nn.Module):
         if conditioning is None:
             conditioning = self.cfg_dropout_token.expand(x.shape[0], -1)
         x = self.projection.param_to_token(x)
-        z = torch.cat((conditioning, t), dim=-1)
+        # z = torch.cat((conditioning, t), dim=-1)
+        z = self.conditioning(conditioning, t)
 
         if self.pe_type == "initial":
             x = self.pe(x)
