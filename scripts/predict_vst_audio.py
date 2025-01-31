@@ -91,8 +91,8 @@ def main(
             file_idx = current_offset + j
 
             row_params = (row + 1) / 2
-            row_params, note = SURGE_XT_PARAM_SPEC.from_numpy(row_params)
             row_params = np.clip(row_params, 0, 1)
+            row_params, note = SURGE_XT_PARAM_SPEC.from_numpy(row_params)
             pred_audio = render_params(
                 plugin,
                 row_params,
