@@ -102,16 +102,16 @@ def main(
                 sample_rate,
                 channels,
             )
-            with AudioFile(f"{file_idx}_pred.wav", "w", sample_rate, channels) as f:
+            out_pred = os.path.join(output_dir, f"{file_idx}_pred.wav")
+            with AudioFile(out_pred, "w", sample_rate, channels) as f:
                 f.write(pred_audio.T)
 
             # 6. save {file_idx}_pred.wav and {file_idx}_target.wav, with target
             # coming from the hdf5 file
             if batch_target is not None:
                 row_target = target_audio[j].astype(np.float32)
-                with AudioFile(
-                    f"{file_idx}_target.wav", "w", sample_rate, channels
-                ) as f:
+                out_target = os.path.join(output_dir, f"{file_idx}_target.wav")
+                with AudioFile(out_target, "w", sample_rate, channels) as f:
                     f.write(row_target.T)
 
         current_offset += params.shape[0]
