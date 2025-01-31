@@ -57,7 +57,7 @@ def main(
 
     # 1. load and prepare the VST
     plugin = load_plugin(plugin_path)
-    load_plugin(plugin, preset_path)
+    load_preset(plugin, preset_path)
 
     # 2. list the .pt files with accompanying indices (each file has name
     # pred-{index}.pt, and we want to sort by index)
