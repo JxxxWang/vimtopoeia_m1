@@ -1,3 +1,4 @@
+import os
 from typing import Optional
 
 import click
@@ -25,6 +26,7 @@ from src.data.vst.surge_xt_param_spec import SURGE_XT_PARAM_SPEC
 @click.option("--signal_duration_seconds", "-d", type=float, default=4.0)
 def main(
     pred_dir: str,
+    output_dir: str,
     hdf5_path: Optional[str] = None,
     plugin_path: str = "plugins/Surge XT.vst3",
     preset_path: str = "presets/surge-base.vstpreset",
@@ -51,9 +53,10 @@ def main(
     # 3. foreach .pt file
     # 4. iterate over its internal rows and render the audio
     # 5. save {i}_pred.wav and {i}_target.wav, with target coming from the hdf5 file
+    os.makedirs(output_dir, exist_ok=True)
 
     # 1. load and prepare the VST
-    plugin = load_plugin()
+    plugin = load_plugin(plugin_path)
     load_plugin(plugin, preset_path)
 
     # 2. list the .pt files with accompanying indices (each file has name
