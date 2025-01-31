@@ -464,9 +464,8 @@ class DiTransformerBlock(nn.Module):
         cond_out_dim = d_model * 6 if adaln_mode != "res" else d_model * 4
         self.adaln_mode = adaln_mode
         self.cond = nn.Sequential(
-            nn.Linear(conditioning_dim, d_model),
             nn.GELU(),
-            nn.Linear(d_model, cond_out_dim),
+            nn.Linear(conditioning_dim, cond_out_dim),
         )
 
         self._init_adaln(adaln_mode)
