@@ -5,7 +5,7 @@ defaults:
   - data: surge # choose datamodule with `test_dataloader()` for evaluation
   - model: surge_flow
   - logger: null
-  - trainer: default
+  - trainer: gpu
   - paths: default
   - extras: default
   - hydra: default
