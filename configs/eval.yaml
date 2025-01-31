@@ -15,6 +15,7 @@ defaults:
 task_name: "eval"
 
 tags: ["dev"]
+mode: test
 
 # passing checkpoint path is necessary for evaluation
 ckpt_path: ???
