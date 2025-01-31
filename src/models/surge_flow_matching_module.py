@@ -234,7 +234,7 @@ class SurgeFlowMatchingModule(LightningModule):
         )
 
     def setup(self, stage: str) -> None:
-        if self.hparams.compile and stage == "fit":
+        if self.hparams.compile:
             self.vector_field = torch.compile(self.vector_field)
             self.encoder = torch.compile(self.encoder)
 
