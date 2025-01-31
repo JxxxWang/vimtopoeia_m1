@@ -89,7 +89,10 @@ def evaluate(cfg: DictConfig) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         trainer.validate(model=model, datamodule=datamodule, ckpt_path=cfg.ckpt_path)
     elif mode == "predict":
         predictions = trainer.predict(
-            model=model, dataloaders=datamodule, ckpt_path=cfg.ckpt_path
+            model=model,
+            dataloaders=datamodule,
+            ckpt_path=cfg.ckpt_path,
+            return_predictions=False,
         )
 
     # for predictions use trainer.predict(...)
