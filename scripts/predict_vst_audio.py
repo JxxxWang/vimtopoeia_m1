@@ -94,7 +94,7 @@ def main(
             pred_audio = render_params(
                 plugin,
                 row_params,
-                note,
+                int(note),
                 velocity,
                 note_duration_seconds,
                 signal_duration_seconds,
