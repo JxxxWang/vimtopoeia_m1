@@ -249,6 +249,8 @@ def main(
         param_spec = SURGE_XT_PARAM_SPEC
     elif param_spec in ("mini", "surge_mini", "surge_xt_mini"):
         param_spec = SURGE_MINI_PARAM_SPEC
+    else:
+        raise ValueError(f"Invalid param_spec: {param_spec}")
 
     with h5py.File(data_file, "w") as f:
         make_dataset(
