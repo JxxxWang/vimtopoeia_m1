@@ -3,10 +3,9 @@ import threading
 import time
 from typing import Callable
 
+import mido
 import numpy as np
 from loguru import logger
-
-import mido
 from pedalboard import VST3Plugin
 from pedalboard.io import AudioFile
 
@@ -75,10 +74,12 @@ def render_params(
     channels: int,
 ) -> np.ndarray:
     logger.debug("flushing plugin")
-    plugin.process([], 1.0, sample_rate, channels, 8192, True)  # flush
+    plugin.process([], 4.0, sample_rate, channels, 8192, True)  # flush
+    plugin.reset()
 
     logger.debug("setting params")
     set_params(plugin, params)
+    plugin.reset()
 
     midi_events = midi_pitch_to_event(midi_note, velocity, note_duration_seconds)
 

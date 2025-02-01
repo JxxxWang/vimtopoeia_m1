@@ -12,8 +12,11 @@ from pedalboard import VST3Plugin
 from pyloudnorm import Meter
 from tqdm import trange
 
+from src.data.vst.param_spec import ParamSpec
+
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 from src.data.vst import load_plugin, load_preset, render_params  # noqa
+from src.data.vst.surge_xt_param_spec import SURGE_MINI_PARAM_SPEC  # noqa
 from src.data.vst.surge_xt_param_spec import SURGE_XT_PARAM_SPEC  # noqa
 
 
@@ -47,6 +50,8 @@ class VSTDataSample:
     sample_rate: float
     channels: int
 
+    param_spec: ParamSpec
+
     audio: np.ndarray
     mel_spec: np.ndarray
     param_array: np.ndarray = None
@@ -55,7 +60,7 @@ class VSTDataSample:
 
     def __post_init__(self):
         self.identifier = _hash_params(self.parameters)
-        self.param_array = SURGE_XT_PARAM_SPEC.to_numpy(
+        self.param_array = self.param_spec.to_numpy(
             self.parameters, self.midi_note, self.min_pitch, self.max_pitch
         )
 
@@ -91,10 +96,11 @@ def generate_sample(
     sample_rate: float = 44100.0,
     channels: int = 2,
     min_loudness: float = -55.0,
+    param_spec: ParamSpec = SURGE_XT_PARAM_SPEC,
 ) -> VSTDataSample:
     while True:
         logger.debug("sampling params")
-        params = SURGE_XT_PARAM_SPEC.sample()
+        params = param_spec.sample()
 
         logger.debug("sampling note")
         note = sample_midi_note(
@@ -134,6 +140,7 @@ def generate_sample(
         max_pitch=max_pitch,
         sample_rate=sample_rate,
         channels=channels,
+        param_spec=param_spec,
     )
 
 
@@ -162,6 +169,7 @@ def make_dataset(
     note_duration_seconds: float = 1.5,
     signal_duration_seconds: float = 4.0,
     min_loudness: float = -55.0,
+    param_spec: ParamSpec = SURGE_XT_PARAM_SPEC,
 ) -> None:
     plugin = load_plugin(plugin_path)
     load_preset(plugin, preset_path)
@@ -180,7 +188,7 @@ def make_dataset(
     )
     param_dataset = hdf5_file.create_dataset(
         "param_array",
-        (num_samples, len(SURGE_XT_PARAM_SPEC) + 1),  # +1 for MIDI note
+        (num_samples, len(param_spec) + 1),  # +1 for MIDI note
         dtype=np.float32,
         compression="gzip",
     )
@@ -222,6 +230,7 @@ def make_dataset(
 @click.option("--note_duration_seconds", "-n", type=float, default=1.5)
 @click.option("--signal_duration_seconds", "-d", type=float, default=4.0)
 @click.option("--min_loudness", "-l", type=float, default=-55.0)
+@click.option("--param_spec", "-t", type=str, default="surge_xt")
 def main(
     data_file: str,
     num_samples: int,
@@ -236,6 +245,11 @@ def main(
     signal_duration_seconds: float = 4.0,
     min_loudness: float = -55.0,
 ):
+    if param_spec in ("surge", "surge_xt"):
+        param_spec = SURGE_XT_PARAM_SPEC
+    elif param_spec in ("mini", "surge_mini", "surge_xt_mini"):
+        param_spec = SURGE_MINI_PARAM_SPEC
+
     with h5py.File(data_file, "w") as f:
         make_dataset(
             f,
@@ -250,6 +264,7 @@ def main(
             note_duration_seconds,
             signal_duration_seconds,
             min_loudness,
+            param_spec,
         )
 
 

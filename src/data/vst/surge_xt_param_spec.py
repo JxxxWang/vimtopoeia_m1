@@ -1,5 +1,4 @@
-from src.data.vst.param_spec import (ContinuousParameter, DiscreteParameter,
-                                     ParamSpec)
+from src.data.vst.param_spec import ContinuousParameter, DiscreteParameter, ParamSpec
 
 SURGE_XT_PARAM_SPEC = ParamSpec(
     [
@@ -20,7 +19,9 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
             values=["Digital", "Analog"],
             raw_values=[0.25, 0.75],
         ),
-        ContinuousParameter(name="a_amp_eg_release", min=0.0, max=0.77),  # max around 4s
+        ContinuousParameter(
+            name="a_amp_eg_release", min=0.0, max=0.77
+        ),  # max around 4s
         DiscreteParameter(
             name="a_amp_eg_release_shape",
             values=["Linear", "Quadratic", "Cubic"],
@@ -212,13 +213,17 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
                 0.9625,
             ],
         ),
-        ContinuousParameter(name="a_filter_eg_attack", min=0.0, max=0.77),  # max around 4s
+        ContinuousParameter(
+            name="a_filter_eg_attack", min=0.0, max=0.77
+        ),  # max around 4s
         DiscreteParameter(
             name="a_filter_eg_attack_shape",
             values=["Convex", "Linear", "Concave"],
             raw_values=[0.1265, 0.5005, 0.874],
         ),
-        ContinuousParameter(name="a_filter_eg_decay", min=0.0, max=0.77),  # max around 4s
+        ContinuousParameter(
+            name="a_filter_eg_decay", min=0.0, max=0.77
+        ),  # max around 4s
         DiscreteParameter(
             name="a_filter_eg_decay_shape",
             values=["Linear", "Quadratic", "Cubic"],
@@ -229,7 +234,9 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
             values=["Digital", "Analog"],
             raw_values=[0.25, 0.75],
         ),
-        ContinuousParameter(name="a_filter_eg_release", min=0.0, max=0.77),  # max around 4s
+        ContinuousParameter(
+            name="a_filter_eg_release", min=0.0, max=0.77
+        ),  # max around 4s
         DiscreteParameter(
             name="a_filter_eg_release_shape",
             values=["Linear", "Quadratic", "Cubic"],
@@ -415,7 +422,7 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
             name="a_lfo_5_unipolar", values=[False, True], raw_values=[0.2505, 0.7505]
         ),
         ContinuousParameter(
-            name="a_lfo_6_amplitude", min=0.0, max=1.0, constant_val_p=0.67
+            name="a_lfo_6_amplitude", min=0.0, max=1.0, constant_val_p=0.8
         ),
         ContinuousParameter(name="a_lfo_6_attack", min=0.0, max=1.0),
         ContinuousParameter(name="a_lfo_6_decay", min=0.0, max=1.0),
@@ -1175,6 +1182,184 @@ SURGE_XT_PARAM_SPEC = ParamSpec(
         ContinuousParameter(name="fx_a3_output_width", min=0.0, max=1.0),
         ContinuousParameter(
             name="fx_a3_output_mix", min=0.0, max=1.0, constant_val_p=0.67
+        ),
+    ]
+)
+
+SURGE_MINI_PARAM_SPEC = ParamSpec(
+    [
+        ContinuousParameter(name="a_amp_eg_attack", min=0.0, max=0.77),  # max around 4s
+        ContinuousParameter(name="a_amp_eg_decay", min=0.0, max=0.77),  # max around 4s
+        ContinuousParameter(
+            name="a_amp_eg_release", min=0.0, max=0.77
+        ),  # max around 4s
+        ContinuousParameter(name="a_amp_eg_sustain", min=0.0, max=1.0),
+        ContinuousParameter(
+            name="a_feedback", min=0.0, max=1.0, constant_val_p=0.5, constant_val=0.0
+        ),
+        ContinuousParameter(name="a_filter_1_cutoff", min=0.0, max=1.0),
+        ContinuousParameter(name="a_filter_1_feg_mod_amount", min=0.0, max=1.0),
+        ContinuousParameter(name="a_filter_1_resonance", min=0.0, max=1.0),
+        ContinuousParameter(name="a_filter_2_cutoff", min=0.0, max=1.0),
+        ContinuousParameter(name="a_filter_2_feg_mod_amount", min=0.0, max=1.0),
+        ContinuousParameter(name="a_filter_2_resonance", min=0.0, max=1.0),
+        ContinuousParameter(name="a_filter_balance", min=0.0, max=1.0),
+        ContinuousParameter(
+            name="a_filter_eg_attack", min=0.0, max=0.77
+        ),  # max around 4s
+        ContinuousParameter(
+            name="a_filter_eg_decay", min=0.0, max=0.77
+        ),  # max around 4s
+        ContinuousParameter(
+            name="a_filter_eg_release", min=0.0, max=0.77
+        ),  # max around 4s
+        ContinuousParameter(name="a_filter_eg_sustain", min=0.0, max=1.0),
+        ContinuousParameter(name="a_highpass", min=0.0, max=1.0, constant_val_p=0.5),
+        ContinuousParameter(
+            name="a_lfo_1_amplitude", min=0.0, max=1.0, constant_val_p=0.67
+        ),
+        ContinuousParameter(name="a_lfo_1_attack", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_1_decay", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_1_deform", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_1_delay", min=0.0, max=1.0, constant_val_p=0.5),
+        ContinuousParameter(name="a_lfo_1_hold", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_1_phase", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_1_rate", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_1_release", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_1_sustain", min=0.0, max=1.0),
+        ContinuousParameter(
+            name="a_lfo_2_amplitude", min=0.0, max=1.0, constant_val_p=0.67
+        ),
+        ContinuousParameter(name="a_lfo_2_attack", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_2_decay", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_2_deform", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_2_delay", min=0.0, max=1.0, constant_val_p=0.5),
+        ContinuousParameter(name="a_lfo_2_hold", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_2_phase", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_2_rate", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_2_release", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_2_sustain", min=0.0, max=1.0),
+        ContinuousParameter(
+            name="a_lfo_3_amplitude", min=0.0, max=1.0, constant_val_p=0.67
+        ),
+        ContinuousParameter(name="a_lfo_3_attack", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_3_decay", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_3_deform", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_3_delay", min=0.0, max=1.0, constant_val_p=0.5),
+        ContinuousParameter(name="a_lfo_3_hold", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_3_phase", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_3_rate", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_3_release", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_3_sustain", min=0.0, max=1.0),
+        ContinuousParameter(
+            name="a_lfo_4_amplitude", min=0.0, max=1.0, constant_val_p=0.67
+        ),
+        ContinuousParameter(name="a_lfo_4_attack", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_4_decay", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_4_deform", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_4_delay", min=0.0, max=1.0, constant_val_p=0.5),
+        ContinuousParameter(name="a_lfo_4_hold", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_4_phase", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_4_rate", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_4_release", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_4_sustain", min=0.0, max=1.0),
+        ContinuousParameter(
+            name="a_lfo_5_amplitude", min=0.0, max=1.0, constant_val_p=0.67
+        ),
+        ContinuousParameter(name="a_lfo_5_attack", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_5_decay", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_5_deform", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_5_delay", min=0.0, max=1.0, constant_val_p=0.5),
+        ContinuousParameter(name="a_lfo_5_hold", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_5_phase", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_5_rate", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_5_release", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_5_sustain", min=0.0, max=1.0),
+        ContinuousParameter(
+            name="a_lfo_6_amplitude", min=0.0, max=1.0, constant_val_p=0.67
+        ),
+        ContinuousParameter(name="a_lfo_6_attack", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_6_decay", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_6_deform", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_6_delay", min=0.0, max=1.0, constant_val_p=0.5),
+        ContinuousParameter(name="a_lfo_6_hold", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_6_phase", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_6_rate", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_6_release", min=0.0, max=1.0),
+        ContinuousParameter(name="a_lfo_6_sustain", min=0.0, max=1.0),
+        ContinuousParameter(name="a_noise_color", min=0.0, max=1.0),
+        ContinuousParameter(
+            name="a_noise_volume", min=0.0, max=1.0, constant_val_p=0.67
+        ),
+        ContinuousParameter(
+            name="a_osc_1_pitch", min=0.0, max=1.0, constant_val_p=0.5, constant_val=0.8
+        ),
+        ContinuousParameter(name="a_osc_1_sawtooth", min=0.0, max=1.0),
+        ContinuousParameter(name="a_osc_1_width", min=0.0, max=1.0),
+        ContinuousParameter(name="a_osc_1_sync", min=0.0, max=1.0),
+        ContinuousParameter(
+            name="a_osc_1_unison_detune",
+            min=0.0,
+            max=1.0,
+            constant_val_p=0.5,
+            constant_val=0.0,
+        ),
+        ContinuousParameter(name="a_osc_1_volume", min=0.0, max=1.0),
+        ContinuousParameter(name="a_osc_1_pulse", min=0.0, max=1.0),
+        ContinuousParameter(name="a_osc_1_triangle", min=0.0, max=1.0),
+        ContinuousParameter(
+            name="a_osc_2_pitch", min=0.0, max=1.0, constant_val_p=0.5, constant_val=0.8
+        ),
+        ContinuousParameter(name="a_osc_2_sawtooth", min=0.0, max=1.0),
+        ContinuousParameter(name="a_osc_2_width", min=0.0, max=1.0),
+        ContinuousParameter(name="a_osc_2_sync", min=0.0, max=1.0),
+        ContinuousParameter(
+            name="a_osc_2_unison_detune",
+            min=0.0,
+            max=1.0,
+            constant_val_p=0.5,
+            constant_val=0.0,
+        ),
+        ContinuousParameter(name="a_osc_2_volume", min=0.0, max=1.0),
+        ContinuousParameter(name="a_osc_2_pulse", min=0.0, max=1.0),
+        ContinuousParameter(name="a_osc_2_triangle", min=0.0, max=1.0),
+        ContinuousParameter(
+            name="a_osc_3_pitch", min=0.0, max=1.0, constant_val_p=0.5, constant_val=0.8
+        ),
+        ContinuousParameter(name="a_osc_3_sawtooth", min=0.0, max=1.0),
+        ContinuousParameter(name="a_osc_3_width", min=0.0, max=1.0),
+        ContinuousParameter(name="a_osc_3_sync", min=0.0, max=1.0),
+        ContinuousParameter(
+            name="a_osc_3_unison_detune",
+            min=0.0,
+            max=1.0,
+            constant_val_p=0.5,
+            constant_val=0.0,
+        ),
+        ContinuousParameter(name="a_osc_3_volume", min=0.0, max=1.0),
+        ContinuousParameter(name="a_osc_3_pulse", min=0.0, max=1.0),
+        ContinuousParameter(name="a_osc_3_triangle", min=0.0, max=1.0),
+        ContinuousParameter(name="a_osc_drift", min=0.0, max=1.0),
+        ContinuousParameter(name="fx_a1_delay_time", min=0.0, max=1.0),
+        ContinuousParameter(name="fx_a1_modulation_rate", min=0.0, max=1.0),
+        ContinuousParameter(name="fx_a1_modulation_depth", min=0.0, max=1.0),
+        ContinuousParameter(name="fx_a1_delay_feedback", min=0.0, max=1.0),
+        ContinuousParameter(
+            name="fx_a1_output_mix", min=0.0, max=1.0, constant_val_p=0.67
+        ),
+        ContinuousParameter(name="fx_a1_output_width", min=0.0, max=1.0),
+        ContinuousParameter(name="fx_a3_reverb_room_size", min=0.0, max=1.0),
+        ContinuousParameter(name="fx_a3_reverb_decay_time", min=0.0, max=1.0),
+        ContinuousParameter(name="fx_a3_output_width", min=0.0, max=1.0),
+        ContinuousParameter(
+            name="fx_a3_output_mix", min=0.0, max=1.0, constant_val_p=0.67
+        ),
+        ContinuousParameter(
+            name="a_waveshaper_drive",
+            min=0.437545,
+            max=1.0,
+            constant_val_p=0.5,
+            constant_val=0.5,
         ),
     ]
 )
