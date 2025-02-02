@@ -359,7 +359,7 @@ class LogPerParamMSE(Callback):
         outputs,
         batch,
         batch_idx,
-        dataloader_idx,
+        dataloader_idx = 0,
     ) -> None:
         per_param_mse = outputs["per_param_mse"]
         self.per_param_mse += per_param_mse.detach().cpu().numpy()
