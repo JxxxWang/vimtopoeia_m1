@@ -24,7 +24,7 @@ for split, (lo, hi) in splits.items():
             source_name, "mel_spec", dtype=np.float32, shape=(10_000, 2, 128, 401)
         )
         vs_param = h5py.VirtualSource(
-            source_name, "param_array", dtype=np.float32, shape=(10_000, 189)
+            source_name, "param_array", dtype=np.float32, shape=(10_000, 116)
         )
 
         range_start = (i - lo) * 10_000
