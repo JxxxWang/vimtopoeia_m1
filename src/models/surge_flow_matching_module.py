@@ -4,6 +4,7 @@ from typing import Any, Callable, Dict, Optional, Tuple
 
 import torch
 from lightning import LightningModule
+from lightning.pytorch.utilities import grad_norm
 
 
 def call_with_cfg(
@@ -238,6 +239,16 @@ class SurgeFlowMatchingModule(LightningModule):
         if self.hparams.compile:
             self.vector_field = torch.compile(self.vector_field)
             self.encoder = torch.compile(self.encoder)
+
+    def on_before_optimizer_step(self, optimizer) -> None:
+        vf_norms = grad_norm(self.vector_field, 2.0)
+        encoder_norms = grad_norm(self.encoder, 2.0)
+
+        vf_norms = {f"vector_field/{k}": v for k, v in vf_norms.items()}
+        encoder_norms = {f"encoder/{k}": v for k, v in encoder_norms.items()}
+
+        self.log_dict(vf_norms, on_step=True, on_epoch=True)
+        self.log_dict(encoder_norms, on_step=True, on_epoch=True)
 
     def configure_optimizers(self) -> Dict[str, Any]:
         optimizer = self.hparams.optimizer(params=self.trainer.model.parameters())

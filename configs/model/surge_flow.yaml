@@ -42,6 +42,7 @@ vector_field:
   norm: layer
   skip_first_norm: false
   adaln_mode: basic
+  use_conditioning_ffn: true
 
 # training
 cfg_dropout_rate: 0.1

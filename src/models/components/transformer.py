@@ -624,6 +624,7 @@ class ApproxEquivTransformer(nn.Module):
         norm: Literal["layer", "rms"] = "layer",
         skip_first_norm: bool = False,
         adaln_mode: Literal["basic", "zero"] = "basic",
+        use_conditioning_ffn: bool = False,
     ):
         super().__init__()
 
@@ -632,11 +633,22 @@ class ApproxEquivTransformer(nn.Module):
         conditioning_dim = (
             conditioning_dim + 1 if time_encoding == "scalar" else conditioning_dim
         )
+
+        if use_conditioning_ffn:
+            self.conditioning_ffn = nn.Sequential(
+                nn.LayerNorm(conditioning_dim),
+                nn.Linear(conditioning_dim, d_model),
+                nn.GELU(),
+                nn.Linear(),
+            )
+        else:
+            self.conditioning_ffn = nn.Identity()
+
         self.layers = nn.ModuleList(
             [
                 DiTransformerBlock(
                     d_model,
-                    conditioning_dim,
+                    conditioning_dim if not use_conditioning_ffn else d_model,
                     num_heads,
                     d_ff,
                     norm,
@@ -717,6 +729,7 @@ class ApproxEquivTransformer(nn.Module):
         x = self.projection.param_to_token(x)
         # z = torch.cat((conditioning, t), dim=-1)
         z = self.conditioning(conditioning, t)
+        z = self.conditioning_ffn(z)  # identity if self.use_conditioning_ffn is false
 
         if self.pe_type == "initial":
             x = self.pe(x)

@@ -1,4 +1,3 @@
-import random
 from pathlib import Path
 from typing import Optional, Sequence, Union
 
@@ -6,9 +5,8 @@ import h5py
 import numpy as np
 import torch
 from lightning import LightningDataModule
-from tqdm import trange
 
-from src.data.ot import _hungarian_match, ot_collate_fn, regular_collate_fn
+from src.data.ot import _hungarian_match
 
 
 class SurgeXTDataset(torch.utils.data.Dataset):
@@ -236,7 +234,7 @@ class SurgeDataModule(LightningDataModule):
             num_workers=self.num_workers,
             pin_memory=True,
             sampler=WithinChunkShuffledSampler(
-                self.batch_size, len(self.train_dataset), 8
+                self.batch_size, len(self.train_dataset), 4
             ),
             # shuffle=True,
         )
