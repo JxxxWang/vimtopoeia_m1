@@ -639,7 +639,7 @@ class ApproxEquivTransformer(nn.Module):
                 nn.LayerNorm(conditioning_dim),
                 nn.Linear(conditioning_dim, d_model),
                 nn.GELU(),
-                nn.Linear(),
+                nn.Linear(d_model, d_model),
             )
         else:
             self.conditioning_ffn = nn.Identity()
