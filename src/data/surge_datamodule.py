@@ -123,7 +123,7 @@ class SurgeXTDataset(torch.utils.data.Dataset):
             mel_spec=mel_spec.contiguous(),
             params=param_array.contiguous(),
             noise=noise.contiguous(),
-            audio=audio.contiguous(),
+            audio=audio.contiguous() if audio is not None else None,
         )
 
 
