@@ -604,6 +604,79 @@ class SinusoidalConditioning(nn.Module):
         return z + t
 
 
+def sym_randn_init(shape, dim, eps=1e-4):
+    sym_shape = list(shape)
+    sym_shape[dim] = 1
+
+    repeat_shape = [1] * len(shape)
+    repeat_shape[dim] = shape[dim]
+
+    sym_init = torch.randn(*sym_shape).repeat(*repeat_shape)
+
+    return sym_init + eps * torch.randn(shape)
+
+
+class MutualAttentionProjection(nn.Module):
+    """
+    p (b, n) parameters
+    sinusoidal embed -> MLP
+    +
+    pos embed
+
+    to get (b, n, d) tokens
+
+    then concat with k learnt tokens for (b, n + k, d)
+    apply self attn and take last k for (b, k, d)
+
+    pass through transformer
+
+    at output concat with n learnt tokens for (b, n + k, d)
+    apply self attn and take first n
+    final ffn to 1d
+    """
+
+    def __init__(self, d_model: int, n_params: int, n_tokens: int):
+        super().__init__()
+
+        self.token_queries = nn.Parameter(
+            torch.randn(1, n_tokens, d_model) * 1e-4 + torch.randn(1, 1, d_model)
+        )
+        self.param_queries = nn.Parameter(
+            torch.randn(1, n_params, d_model) * 1e-4 + torch.randn(1, 1, d_model)
+        )
+
+        self.in_attn = nn.MultiheadAttention(d_model, 8, batch_first=True)
+        self.out_attn = nn.MultiheadAttention(d_model, 8, batch_first=True)
+
+        self.sin = SinusoidalConditioning(d_model, 256)
+        self.pos = nn.Parameter(
+            torch.randn(1, n_params, d_model) * 1e-4 + torch.randn(1, 1, d_model)
+        )
+
+        self.mlp = nn.Sequential(
+            nn.Linear(d_model, d_model),
+            nn.GELU(),
+            nn.Linear(d_model, 1),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return x
+
+    def param_to_token(self, params: torch.Tensor) -> torch.Tensor:
+        param_encodings = self.sin(self.pos, params)
+        token_queries = self.token_queries.expand(params.shape[0], 1, 1)
+        token_encodings, _ = self.in_attn(
+            token_queries, param_encodings, param_encodings
+        )
+        return token_encodings
+
+    def token_to_param(self, tokens: torch.Tensor) -> torch.Tensor:
+        param_queries = self.param_queries.expand(tokens.shape[0], 1, 1)
+        param_encodings, _ = self.out_attn(param_queries, tokens, tokens)
+        params = self.mlp(param_encodings).squeeze(-1)
+        return params
+
+
 class ApproxEquivTransformer(nn.Module):
     def __init__(
         self,
