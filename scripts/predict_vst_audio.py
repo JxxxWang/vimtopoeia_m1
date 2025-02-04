@@ -12,7 +12,7 @@ from tqdm import tqdm
 
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 from src.data.vst import load_plugin, load_preset, render_params
-from src.data.vst.surge_xt_param_spec import SURGE_XT_PARAM_SPEC
+from src.data.vst.surge_xt_param_spec import SURGE_XT_PARAM_SPEC, SURGE_MINI_PARAM_SPEC
 
 
 @click.command()
@@ -92,7 +92,7 @@ def main(
 
             row_params = (row + 1) / 2
             row_params = np.clip(row_params, 0, 1)
-            row_params, note = SURGE_XT_PARAM_SPEC.from_numpy(row_params)
+            row_params, note = SURGE_MINI_PARAM_SPEC.from_numpy(row_params)
             pred_audio = render_params(
                 plugin,
                 row_params,
