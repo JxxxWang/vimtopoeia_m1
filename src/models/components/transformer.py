@@ -665,14 +665,15 @@ class MutualAttentionProjection(nn.Module):
     def param_to_token(self, params: torch.Tensor) -> torch.Tensor:
         param_encodings = self.sin(self.pos, params)
         token_queries = self.token_queries.repeat(params.shape[0], 1, 1)
-        token_encodings, _ = self.in_attn(
-            token_queries, param_encodings, param_encodings
-        )
-        return token_encodings
+        in_seq = torch.cat([param_encodings, token_queries], dim=1)
+        token_encodings, _ = self.in_attn(in_seq, param_encodings, param_encodings)
+        return token_encodings[:, -self.token_queries.shape[1] :]
 
     def token_to_param(self, tokens: torch.Tensor) -> torch.Tensor:
         param_queries = self.param_queries.repeat(tokens.shape[0], 1, 1)
-        param_encodings, _ = self.out_attn(param_queries, tokens, tokens)
+        in_seq = torch.cat([param_queries, tokens], dim=1)
+        param_encodings, _ = self.out_attn(in_seq, tokens, tokens)
+        param_encodings = param_encodings[:, : self.param_queries.shape[1]]
         params = self.mlp(param_encodings).squeeze(-1)
         return params
 
