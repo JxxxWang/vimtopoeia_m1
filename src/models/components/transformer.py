@@ -681,6 +681,9 @@ class MutualAttentionProjection(nn.Module):
         params = self.mlp(param_encodings).squeeze(-1)
         return params
 
+    def penalty(self):
+        return 0.0
+
 
 class ApproxEquivTransformer(nn.Module):
     def __init__(
