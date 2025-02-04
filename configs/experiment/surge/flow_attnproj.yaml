@@ -8,4 +8,4 @@ defaults:
 run_name: flow_attnproj
 
 callbacks:
-  plot_projii: null
+  plot_proj_ii: null
