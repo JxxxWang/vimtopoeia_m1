@@ -3,7 +3,8 @@ from pathlib import Path
 from typing import Optional
 
 import click
-import h5py
+import librosa
+import matplotlib.pyplot as plt
 import numpy as np
 import rootutils
 import torch
@@ -12,13 +13,73 @@ from tqdm import tqdm
 
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 from src.data.vst import load_plugin, load_preset, render_params
-from src.data.vst.surge_xt_param_spec import SURGE_XT_PARAM_SPEC, SURGE_MINI_PARAM_SPEC
+from src.data.vst.surge_xt_param_spec import SURGE_MINI_PARAM_SPEC, SURGE_XT_PARAM_SPEC
+
+
+def make_spectrogram(audio: np.ndarray, sample_rate: float) -> np.ndarray:
+    channels = audio.shape[0]
+
+    specs = []
+    for channel in range(channels):
+        spec = librosa.feature.melspectrogram(
+            y=audio[channel],
+            sr=sample_rate,
+            n_mels=128,
+            n_fft=2048,
+            hop_length=512,
+            window="hamming",
+        )
+        spec_db = librosa.power_to_db(spec, ref=np.max)
+        specs.append(spec_db)
+
+    return specs
+
+
+def write_spectrograms(
+    pred_audio: np.ndarray,
+    target_audio: np.ndarray,
+    sample_rate: float,
+    save_path: str,
+) -> np.ndarray:
+    pred_specs = make_spectrogram(pred_audio, sample_rate)
+    target_specs = make_spectrogram(target_audio, sample_rate)
+
+    channels = len(pred_specs) + len(target_specs)
+
+    fig, axs = plt.subplots(channels, 1, figsize=(8, 3 * channels))
+
+    for i, spec in enumerate(pred_specs):
+        spec = librosa.amplitude_to_db(spec, ref=np.max)
+        librosa.display.specshow(
+            spec,
+            sr=sample_rate,
+            hop_length=512,
+            x_axis="time",
+            y_axis="mel",
+            ax=axs[i],
+            cmap="magma",
+        )
+
+    for i, spec in enumerate(target_specs):
+        spec = librosa.amplitude_to_db(spec, ref=np.max)
+        librosa.display.specshow(
+            spec,
+            sr=sample_rate,
+            hop_length=512,
+            x_axis="time",
+            y_axis="mel",
+            ax=axs[i + len(pred_specs)],
+            cmap="magma",
+        )
+
+    plt.tight_layout()
+    plt.savefig(save_path)
+    plt.close()
 
 
 @click.command()
 @click.argument("pred_dir", type=str)
 @click.argument("output_dir", type=str)
-@click.option("--hdf5_path", "-h", type=str, default=None)
 @click.option("--plugin_path", "-p", type=str, default="plugins/Surge XT.vst3")
 @click.option("--preset_path", "-r", type=str, default="presets/surge-base.vstpreset")
 @click.option("--sample_rate", "-s", type=float, default=44100.0)
@@ -29,7 +90,6 @@ from src.data.vst.surge_xt_param_spec import SURGE_XT_PARAM_SPEC, SURGE_MINI_PAR
 def main(
     pred_dir: str,
     output_dir: str,
-    hdf5_path: Optional[str] = None,
     plugin_path: str = "plugins/Surge XT.vst3",
     preset_path: str = "presets/surge-base.vstpreset",
     sample_rate: float = 44100.0,
@@ -38,23 +98,6 @@ def main(
     note_duration_seconds: float = 1.5,
     signal_duration_seconds: float = 4.0,
 ):
-    # we take in:
-    # - a directory of .pt files
-    # - an output dir
-    # - optionally an hdf5 path
-    # with defaults:
-    # VST path
-    # preset path
-    # sample rate
-    # channels
-    #
-    # the pt file contains parameters, aligned with the entries of the hdf5 file
-    # so, steps:
-    # 1. load and prepare the VST
-    # 2. list the .pt files
-    # 3. foreach .pt file
-    # 4. iterate over its internal rows and render the audio
-    # 5. save {i}_pred.wav and {i}_target.wav, with target coming from the hdf5 file
     os.makedirs(output_dir, exist_ok=True)
 
     # 1. load and prepare the VST
@@ -64,33 +107,25 @@ def main(
     # 2. list the .pt files with accompanying indices (each file has name
     # pred-{index}.pt, and we want to sort by index)
     pred_dir = Path(pred_dir)
-    pt_files = [f for f in pred_dir.glob("*.pt") if f.is_file()]
-    pt_files = sorted(pt_files, key=lambda f: int(f.stem.split("-")[1]))
-
-    # 3. Open the hdf5 file if we have one
-    if hdf5_path is not None:
-        f = h5py.File(hdf5_path, "r")
-        target_audio = f["audio"]
-    else:
-        target_audio = None
+    pred_files = [f for f in pred_dir.glob("pred-*.pt") if f.is_file()]
+    indices = [int(f.stem.split("-")[1]) for f in pred_files]
+    target_param_files = [pred_dir / f"target-params-{i}.pt" for i in indices]
+    target_audio_files = [pred_dir / f"target-audio-{i}.pt" for i in indices]
 
     # 4. foreach .pt file
     current_offset = 0
-    for i, pt_file in tqdm(enumerate(pt_files)):
-        params = torch.load(pt_file, map_location="cpu")
-
-        if target_audio is not None:
-            batch_target = target_audio[
-                current_offset : current_offset + params.shape[0]
-            ]
-        else:
-            batch_target = None
+    for i, (pred_file, target_param_file, target_audio_file) in tqdm(
+        enumerate(zip(pred_files, target_param_files, target_audio_files))
+    ):
+        pred_params = torch.load(pred_file, map_location="cpu")
+        target_params = torch.load(target_param_file, map_location="cpu")
+        target_audio = torch.load(target_audio_file, map_location="cpu").numpy()
 
         # 5. iterate over its internal rows and render the audio
-        for j, row in tqdm(enumerate(params)):
+        for j in trange(pred_params.shape[0]):
             file_idx = current_offset + j
 
-            row_params = (row + 1) / 2
+            row_params = pred_params[j].numpy()
             row_params = np.clip(row_params, 0, 1)
             row_params, note = SURGE_MINI_PARAM_SPEC.from_numpy(row_params)
             pred_audio = render_params(
@@ -103,19 +138,18 @@ def main(
                 sample_rate,
                 channels,
             )
+
             out_pred = os.path.join(output_dir, f"{file_idx}_pred.wav")
             with AudioFile(out_pred, "w", sample_rate, channels) as f:
                 f.write(pred_audio.T)
 
-            # 6. save {file_idx}_pred.wav and {file_idx}_target.wav, with target
-            # coming from the hdf5 file
-            if batch_target is not None:
-                row_target = target_audio[j].astype(np.float32)
-                out_target = os.path.join(output_dir, f"{file_idx}_target.wav")
-                with AudioFile(out_target, "w", sample_rate, channels) as f:
-                    f.write(row_target.T)
+            out_target = os.path.join(output_dir, f"{file_idx}_target.wav")
+            with AudioFile(out_target, "w", sample_rate, channels) as f:
+                f.write(target_audio[j].T)
 
-        current_offset += params.shape[0]
+            write_spectrograms(pred_audio[j], target_audio[j], out_pred, out_target)
+
+        current_offset += pred_params.shape[0]
 
 
 if __name__ == "__main__":

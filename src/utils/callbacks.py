@@ -333,10 +333,22 @@ class PredictionWriter(BasePredictionWriter):
         batch_idx,
         dataloader_idx,
     ):
+        prediction, batch = prediction
         torch.save(prediction, os.path.join(self.output_dir, f"pred-{batch_idx}.pt"))
+        torch.save(
+            batch["params"],
+            os.path.join(self.output_dir, f"target-params-{batch_idx}.pt"),
+        )
+        torch.save(
+            batch["audio"],
+            os.path.join(self.output_dir, f"target-audio-{batch_idx}.pt"),
+        )
 
     def write_on_epoch_end(self, trainer, pl_module, predictions, batch_indices):
+        predictions, batch = predictions
         torch.save(predictions, os.path.join(self.output_dir, "predictions.pt"))
+        torch.save(batch["params"], os.path.join(self.output_dir, "target-params.pt"))
+        torch.save(batch["audio"], os.path.join(self.output_dir, "target-audio.pt"))
 
 
 class LogPerParamMSE(Callback):
@@ -359,7 +371,7 @@ class LogPerParamMSE(Callback):
         outputs,
         batch,
         batch_idx,
-        dataloader_idx = 0,
+        dataloader_idx=0,
     ) -> None:
         per_param_mse = outputs["per_param_mse"]
         self.per_param_mse += per_param_mse.detach().cpu().numpy()
@@ -373,9 +385,5 @@ class LogPerParamMSE(Callback):
         per_param_mse = self.per_param_mse / self.count
         names = self.param_spec.names
         pl_module.log_dict(
-            {
-                f"per_param_mse/{name}": mse
-                for name, mse in zip(names, per_param_mse)
-            },
+            {f"per_param_mse/{name}": mse for name, mse in zip(names, per_param_mse)},
         )
-
