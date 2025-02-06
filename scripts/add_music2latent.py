@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 import multiprocessing
+import os
 from multiprocessing import Process, Queue
 from pathlib import Path
 from typing import List, Optional, Tuple
-import os
 
 import click
 import h5py
@@ -120,7 +120,7 @@ def process_shard(
         # Rearrange audio (assuming original shape: (batch, channels, time)).
         audio_reshaped = rearrange(audio, "b c t -> (b c) t")
         # Process the batch on the GPU.
-        m2l_out = m2l.encode(audio_reshaped, max_batch_size=batch_size)
+        m2l_out = m2l.encode(audio_reshaped, max_batch_size=audio_reshaped.shape[0])
         # Determine the original batch size and channel count.
         n = audio.shape[0]  # Might be less than batch_size for the last batch.
         c = audio.shape[1]
