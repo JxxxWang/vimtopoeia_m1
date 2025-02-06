@@ -27,7 +27,6 @@ def main(data_dir: str, batch_size: int, shard_range: Optional[Tuple[int, int]] 
             ds for ds in data_shards if get_shard_id(ds) in range(*shard_range)
         ]
 
-    logger.info("Initializing M2L")
     m2l = EncoderDecoder()
 
     outer_pbar = tqdm(data_shards, desc="Processing shards")
@@ -55,7 +54,6 @@ def main(data_dir: str, batch_size: int, shard_range: Optional[Tuple[int, int]] 
         for i in range(num_batches):
             start = i * batch_size
             end = min((i + 1) * batch_size, num_samples)
-            logger.info(f"Processing batch {i}")
 
             inner_pbar.set_description(f"Reading batch {i}")
             audio = f["audio"][start:end]
