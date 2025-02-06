@@ -65,7 +65,7 @@ def main(data_dir: str, batch_size: int, shard_range: Optional[Tuple[int, int]] 
             m2l_out = rearrange(m2l_out, "(b c) d t -> b (c d) t", b=batch_size)
 
             inner_pbar.set_description(f"Writing batch {i}")
-            f["music2latent"][start:end] = m2l_out
+            f["music2latent"][start:end] = m2l_out.cpu().numpy()
 
 
 if __name__ == "__main__":
