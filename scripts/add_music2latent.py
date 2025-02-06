@@ -61,7 +61,7 @@ def main(data_dir: str, batch_size: int, shard_range: Optional[Tuple[int, int]] 
             audio = rearrange(audio, "b c t -> (b c) t")
 
             inner_pbar.set_description(f"Processing batch {i}")
-            m2l_out = m2l(audio)
+            m2l_out = m2l.encode(audio)
             m2l_out = rearrange(m2l_out, "(b c) d t -> b (c d) t")
 
             inner_pbar.set_description(f"Writing batch {i}")
