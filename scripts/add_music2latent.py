@@ -3,6 +3,7 @@ import multiprocessing
 from multiprocessing import Process, Queue
 from pathlib import Path
 from typing import List, Optional, Tuple
+import os
 
 import click
 import h5py
@@ -192,6 +193,7 @@ def main(
 
 
 if __name__ == "__main__":
+    os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
     # On some platforms (e.g. Windows), the multiprocessing start method must be guarded.
     multiprocessing.set_start_method("spawn", force=True)
     main()
