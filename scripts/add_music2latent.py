@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import time
 import multiprocessing
 import os
 from multiprocessing import Process, Queue
@@ -47,6 +48,7 @@ def writer_process(shard_path: Path, write_queue: Queue):
     """
     logger.info(f"Opening for writing to {shard_path}")
 
+    os.system(f"h5clear -s {str(shard_path)}")
     with h5py.File(str(shard_path), "r+", libver="latest") as f:
         f.swmr_mode = True
         while True:
@@ -97,6 +99,7 @@ def process_shard(
     # Start the writer process.
     writer_proc = Process(target=writer_process, args=(shard_path, write_queue))
     writer_proc.start()
+    time.sleep(5)
 
     # Start the reader processes.
     reader_procs = []
