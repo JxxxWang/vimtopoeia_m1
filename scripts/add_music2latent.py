@@ -119,7 +119,7 @@ def process_shard(
         # Rearrange audio (assuming original shape: (batch, channels, time)).
         audio_reshaped = rearrange(audio, "b c t -> (b c) t")
         # Process the batch on the GPU.
-        m2l_out = m2l.encode(audio_reshaped)
+        m2l_out = m2l.encode(audio_reshaped, max_batch_size=batch_size)
         # Determine the original batch size and channel count.
         n = audio.shape[0]  # Might be less than batch_size for the last batch.
         c = audio.shape[1]
