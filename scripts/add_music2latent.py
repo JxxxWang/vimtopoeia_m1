@@ -46,8 +46,6 @@ def writer_process(shard_path: Path, write_queue: Queue):
     the process exits.
     """
     logger.info(f"Opening for writing to {shard_path}")
-    # first we run `h5clear -s file`
-    os.system(f"h5clear -s {str(shard_path)}")
 
     with h5py.File(str(shard_path), "r+", libver="latest") as f:
         f.swmr_mode = True
@@ -70,6 +68,8 @@ def process_shard(
     and pushes the results onto the write_queue.
     """
     # First, create (or verify) the output dataset.
+    # first we run `h5clear -s file`
+    os.system(f"h5clear -s {str(shard_path)}")
     with h5py.File(str(shard_path), "r+", libver="latest") as f:
         f.swmr_mode = True
         num_samples = f["audio"].shape[0]
