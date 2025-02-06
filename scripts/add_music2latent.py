@@ -183,6 +183,8 @@ def main(
         click.echo("No valid data shards found.")
         return
 
+    data_shards.sort(key=get_shard_id)
+
     # Create the model instance (holds GPU inference code).
     m2l = EncoderDecoder()
 
