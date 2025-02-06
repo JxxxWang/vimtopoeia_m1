@@ -34,7 +34,7 @@ def main(data_dir: str, batch_size: int, shard_range: Optional[Tuple[int, int]] 
     for data_shard in outer_pbar:
         outer_pbar.set_description(f"Processing shard {data_shard.stem}")
         f = h5py.File(str(data_shard), "r+")
-        num_samples, _ = f["audio"].shape
+        num_samples, *_ = f["audio"].shape
 
         outer_pbar.set_description(f"Creating dataset for shard {data_shard.stem}")
         try:
