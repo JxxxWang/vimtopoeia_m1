@@ -44,6 +44,7 @@ def writer_process(shard_path: Path, write_queue: Queue):
     (start_index, end_index, processed_data). When finished (i.e. when receiving None),
     the process exits.
     """
+    logger.info(f"Opening for writing to {shard_path}")
     with h5py.File(str(shard_path), "r+", libver="latest") as f:
         f.swmr_mode = True
         while True:
