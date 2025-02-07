@@ -25,4 +25,4 @@ class EmbeddingPool(nn.Module):
         query = self.query.repeat(embed.shape[0], 1, 1)
         output, _ = self.attn(query, embed, embed)
 
-        return output + query
+        return (output + query).squeeze(1)
