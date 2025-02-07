@@ -14,7 +14,7 @@ class EmbeddingPool(nn.Module):
             d_model, num_heads, kdim=embed_dim, vdim=embed_dim, batch_first=True
         )
         self.query = nn.Parameter(torch.randn(1, 1, d_model))
-        self.positional_encoding = nn.Parameter(torch.zeros(1, 1, d_model))
+        self.positional_encoding = nn.Parameter(torch.zeros(1, 1, embed_dim))
 
     def forward(self, embed: torch.Tensor):
         embed = embed.permute(0, 2, 1)

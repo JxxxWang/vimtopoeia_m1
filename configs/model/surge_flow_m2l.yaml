@@ -45,6 +45,7 @@ vector_field:
   norm: layer
   skip_first_norm: false
   adaln_mode: basic
+  zero_init: false
   use_conditioning_ffn: true
 
 # training
