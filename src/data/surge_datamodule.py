@@ -1,6 +1,6 @@
 import random
 from pathlib import Path
-from typing import Optional, Sequence, Union
+from typing import Literal, Optional, Sequence, Union
 
 import h5py
 import numpy as np
@@ -219,6 +219,7 @@ class SurgeDataModule(LightningDataModule):
         num_workers: int = 0,
         fake: bool = False,
         predict_file: Optional[str] = None,
+        conditioning: Literal["mel", "m2l"] = "mel",
     ):
         super().__init__()
 
@@ -229,6 +230,7 @@ class SurgeDataModule(LightningDataModule):
         self.num_workers = num_workers
         self.fake = fake
         self.predict_file = predict_file
+        self.conditioning = conditioning
 
     def setup(self, stage: Optional[str] = None):
         self.train_dataset = SurgeXTDataset(
@@ -237,6 +239,8 @@ class SurgeDataModule(LightningDataModule):
             ot=self.ot,
             use_saved_mean_and_variance=self.use_saved_mean_and_variance,
             fake=self.fake,
+            read_mel=self.conditioning == "mel",
+            read_m2l=self.conditioning == "m2l",
         )
         self.val_dataset = SurgeXTDataset(
             self.dataset_root / "val.h5",
@@ -244,6 +248,8 @@ class SurgeDataModule(LightningDataModule):
             ot=False,
             use_saved_mean_and_variance=self.use_saved_mean_and_variance,
             fake=self.fake,
+            read_mel=self.conditioning == "mel",
+            read_m2l=self.conditioning == "m2l",
         )
         self.test_dataset = SurgeXTDataset(
             self.dataset_root / "test.h5",
@@ -251,6 +257,8 @@ class SurgeDataModule(LightningDataModule):
             ot=False,
             use_saved_mean_and_variance=self.use_saved_mean_and_variance,
             fake=self.fake,
+            read_mel=self.conditioning == "mel",
+            read_m2l=self.conditioning == "m2l",
         )
         if self.predict_file is not None:
             self.predict_dataset = SurgeXTDataset(
@@ -260,6 +268,8 @@ class SurgeDataModule(LightningDataModule):
                 read_audio=True,
                 use_saved_mean_and_variance=self.use_saved_mean_and_variance,
                 fake=self.fake,
+                read_mel=self.conditioning == "mel",
+                read_m2l=self.conditioning == "m2l",
             )
         else:
             self.predict_dataset = None
