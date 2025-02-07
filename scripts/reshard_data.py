@@ -13,6 +13,7 @@ for split, (lo, hi) in splits.items():
 
     vl_audio = h5py.VirtualLayout(shape=(split_len, 2, 44100 * 4), dtype=np.float32)
     vl_mel = h5py.VirtualLayout(shape=(split_len, 2, 128, 401), dtype=np.float32)
+    vl_m2l = h5py.VirtualLayout(shape=(split_len, 128, 42), dtype=np.float32)
     vl_param = h5py.VirtualLayout(shape=(split_len, 116), dtype=np.float32)
 
     for i in range(lo, hi + 1):
@@ -22,6 +23,9 @@ for split, (lo, hi) in splits.items():
         )
         vs_mel = h5py.VirtualSource(
             source_name, "mel_spec", dtype=np.float32, shape=(10_000, 2, 128, 401)
+        )
+        vs_m2l = h5py.VirtualSource(
+            source_name, "music2latent", dtype=np.float32, shape=(10_000, 128, 42)
         )
         vs_param = h5py.VirtualSource(
             source_name, "param_array", dtype=np.float32, shape=(10_000, 116)
@@ -33,9 +37,11 @@ for split, (lo, hi) in splits.items():
         print(range_start, range_end)
         vl_audio[range_start:range_end, :, :] = vs_audio
         vl_mel[range_start:range_end, :, :, :] = vs_mel
+        vl_m2l[range_start:range_end, :, :] = vs_m2l
         vl_param[range_start:range_end, :] = vs_param
 
     with h5py.File(f"/data/home/acw585/data_scratch/surge-mini/{split}.h5", "w") as f:
         f.create_virtual_dataset("audio", vl_audio)
         f.create_virtual_dataset("mel_spec", vl_mel)
+        f.create_virtual_dataset("music2latent", vl_m2l)
         f.create_virtual_dataset("param_array", vl_param)
