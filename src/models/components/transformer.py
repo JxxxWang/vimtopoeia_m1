@@ -579,13 +579,13 @@ class SinusoidalEncoding(nn.Module):
         k = torch.arange(0, half)
         basis = 1 / torch.pow(10000, k / half)
 
-        self.register_buffer("basis", basis)
+        self.register_buffer("basis", basis[None])
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if x.shape[-1] == 1:
-            basis = self.basis[None, :]
+            basis = self.basis
         else:
-            basis = self.basis[None, None, :]
+            basis = self.basis[None, :]
             x = x[:, :, None]
 
         cos_part = torch.cos(x * self.basis)
