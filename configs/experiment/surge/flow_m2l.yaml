@@ -8,5 +8,4 @@ defaults:
 run_name: flow_m2l
 
 data:
-  read_mel: false
-  read_m2l: true
+  conditioning: m2l
