@@ -30,7 +30,7 @@ class PosEnc(nn.Module):
         super().__init__()
 
         if pos_enc_type == "sin":
-            self.pe = make_sin_pos_enc(max_len, d_enc)
+            self.register_buffer("pe", make_sin_pos_enc(max_len, d_enc))
         elif pos_enc_type == "learned":
             self.pe = nn.Parameter(torch.randn(1, max_len, d_enc) / math.sqrt(d_enc))
 
