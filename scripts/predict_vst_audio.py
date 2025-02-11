@@ -88,7 +88,12 @@ def params_to_csv(
     param_spec: ParamSpec,
 ) -> None:
     """Write the target and predicted parameters to a CSV file."""
-    row_names = param_spec.names()
+    row_names = param_spec.names
+
+    df = pd.DataFrame(
+        data={"Target": target_params, "Pred": pred_params}, index=row_names
+    )
+    df.to_csv(save_path)
 
 
 @click.command()
