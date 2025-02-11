@@ -203,7 +203,7 @@ class ShiftedBatchSampler(torch.utils.data.BatchSampler):
         return self.num_batches - 1
 
     def __iter__(self):
-        offset = random.randint(0, self.num_batches - 1)
+        offset = random.randint(0, self.batch_size - 1)
         perm = np.random.permutation(self.num_batches - 1)
         for i in perm:
             yield (i * self.batch_size + offset, (i + 1) * self.batch_size + offset)
