@@ -829,9 +829,11 @@ class ApproxEquivTransformer(nn.Module):
                 x = self.pe[i](x)
 
             if layerwise_conditioning:
-                z = z[:, i, :]
+                z_ = z[:, i, :]
+            else:
+                z_ = z
 
-            x = layer(x, z)
+            x = layer(x, z_)
 
         x = self.projection.token_to_param(x)
 
