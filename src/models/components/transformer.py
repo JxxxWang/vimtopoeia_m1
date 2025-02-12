@@ -1,4 +1,5 @@
 import math
+from functools import cached_property
 from typing import Literal, Optional, Tuple
 
 import torch
@@ -708,31 +709,28 @@ class ApproxEquivTransformer(nn.Module):
         skip_first_norm: bool = False,
         adaln_mode: Literal["basic", "zero"] = "basic",
         zero_init: bool = True,
-        use_conditioning_ffn: bool = False,
     ):
         super().__init__()
 
         self.cfg_dropout_token = nn.Parameter(torch.randn(1, conditioning_dim))
 
         conditioning_dim = (
-            conditioning_dim + 1 if time_encoding == "scalar" else conditioning_dim
+            conditioning_dim + 1
+            if time_encoding == "scalar"
+            else conditioning_dim + d_enc
         )
 
-        if use_conditioning_ffn:
-            self.conditioning_ffn = nn.Sequential(
-                nn.LayerNorm(conditioning_dim),
-                nn.Linear(conditioning_dim, d_model),
-                nn.GELU(),
-                nn.Linear(d_model, d_model),
-            )
-        else:
-            self.conditioning_ffn = nn.Identity()
+        self.conditioning_ffn = nn.Sequential(
+            nn.Linear(conditioning_dim, d_model),
+            nn.GELU(),
+            nn.Linear(d_model, d_model),
+        )
 
         self.layers = nn.ModuleList(
             [
                 DiTransformerBlock(
                     d_model,
-                    conditioning_dim if not use_conditioning_ffn else d_model,
+                    d_model,
                     num_heads,
                     d_ff,
                     norm,
@@ -745,10 +743,9 @@ class ApproxEquivTransformer(nn.Module):
         )
 
         if time_encoding == "sinusoidal":
-            assert conditioning_dim == d_model, "conditioning_dim must match d_model"
-            self.conditioning = SinusoidalConditioning(d_model, d_enc)
+            self.time_encoding = SinusoidalEncoding(d_enc)
         elif time_encoding == "scalar":
-            self.conditioning = ConcatConditioning()
+            self.time_encoding = nn.Identity()
         else:
             raise ValueError("time_encoding must be 'sinusoidal' or 'scalar'")
 
@@ -782,6 +779,8 @@ class ApproxEquivTransformer(nn.Module):
             return z
 
         dropout_mask = torch.rand(z.shape[0], 1, device=z.device) > rate
+        if z.ndim() == 3:
+            dropout_mask = dropout_mask.unsqueeze(-1)
         return z.where(dropout_mask, self.cfg_dropout_token)
 
     def penalty(self) -> torch.Tensor:
@@ -812,15 +811,26 @@ class ApproxEquivTransformer(nn.Module):
         if conditioning is None:
             conditioning = self.cfg_dropout_token.expand(x.shape[0], -1)
         x = self.projection.param_to_token(x)
-        # z = torch.cat((conditioning, t), dim=-1)
-        z = self.conditioning(conditioning, t)
-        z = self.conditioning_ffn(z)  # identity if self.use_conditioning_ffn is false
+
+        layerwise_conditioning = False
+        if conditioning.ndim() == 3:
+            t = t.unsqueeze(1).repeat(1, conditioning.shape[1], 1)
+            layerwise_conditioning = True
+
+        t = self.time_encoding(t)
+        z = torch.cat((conditioning, t), dim=-1)
+        z = self.conditioning_ffn(z)
 
         if self.pe_type == "initial":
             x = self.pe(x)
+
         for i, layer in enumerate(self.layers):
             if self.pe_type == "layerwise":
                 x = self.pe[i](x)
+
+            if layerwise_conditioning:
+                z = z[:, i, :]
+
             x = layer(x, z)
 
         x = self.projection.token_to_param(x)
@@ -854,12 +864,12 @@ class PatchEmbed(nn.Module):
             spec_shape[1] + time_padding,
         )
 
-        self.num_tokens = math.prod(
-            (
-                (padded_shape[0] - patch_size) // stride + 1,
-                (padded_shape[1] - patch_size) // stride + 1,
-            )
-        )
+        # self.num_tokens = math.prod(
+        #     (
+        #         (padded_shape[0] - patch_size) // stride + 1,
+        #         (padded_shape[1] - patch_size) // stride + 1,
+        #     )
+        # )
         self.pad = nn.ZeroPad2d((0, mel_padding, 0, time_padding))
         self.projection = nn.Conv2d(
             in_channels=in_channels,
@@ -867,6 +877,12 @@ class PatchEmbed(nn.Module):
             kernel_size=patch_size,
             stride=stride,
         )
+
+    @cached_property
+    def num_tokens(self):
+        x = torch.randn(1, self.in_channels, *self.spec_shape)
+        out_shape = self.projection(self.pad(x)).shape
+        return math.prod(out_shape[-2:])
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.pad(x)
@@ -892,6 +908,7 @@ class AudioSpectrogramTransformer(nn.Module):
         d_model: int = 768,
         n_heads: int = 8,
         n_layers: int = 16,
+        n_conditioning_outputs: int = 12,
         patch_size: int = 16,
         patch_stride: int = 10,
         input_channels: int = 2,
@@ -910,7 +927,9 @@ class AudioSpectrogramTransformer(nn.Module):
         self.positional_encoding = PositionalEncoding(
             d_model, self.patch_embed.num_tokens, init="norm0.02"
         )
-        self.embed_token = nn.Parameter(torch.empty(1, 1, d_model).normal_(0.0, 1e-6))
+        self.embed_tokens = nn.Parameter(
+            torch.empty(1, n_conditioning_outputs, d_model).normal_(0.0, 1e-6)
+        )
 
         self.blocks = nn.ModuleList(
             [
@@ -931,14 +950,19 @@ class AudioSpectrogramTransformer(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # produce input sequence
         x = self.patch_embed(x)
-        cls_tokens = self.embed_token.expand(x.shape[0], -1, -1)
-        x = torch.cat((cls_tokens, x), dim=1)
         x = self.positional_encoding(x)
 
         # apply transformer
-        for block in self.blocks:
+        for block in self.blocks[:-1]:
             x = block(x)
 
-        # take just the embed token
-        x = self.out_proj(x[:, 0])
+        embed_tokens = self.embed_token.expand(x.shape[0], -1, -1)
+        x = torch.cat((embed_tokens, x), dim=1)
+
+        x = self.blocks[-1](x)
+
+        # take just the embed tokens
+        x = x[:, : self.embed_tokens.shape[1]]
+        x = self.out_proj(x)
+
         return x

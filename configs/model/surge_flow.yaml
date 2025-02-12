@@ -28,7 +28,7 @@ vector_field:
     var_penalty: false
     initial_ffn: true
     final_ffn: false
-  num_layers: 12
+  num_layers: 8
   d_model: 768
   conditioning_dim: ${model.encoder.d_model}
   num_heads: 12
@@ -43,7 +43,7 @@ vector_field:
   norm: layer
   skip_first_norm: false
   adaln_mode: basic
-  use_conditioning_ffn: true
+  zero_init: false
 
 # training
 cfg_dropout_rate: 0.1
