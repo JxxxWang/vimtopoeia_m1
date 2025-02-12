@@ -25,6 +25,7 @@ class SurgeXTDataset(torch.utils.data.Dataset):
         use_saved_mean_and_variance: bool = True,
         rescale_params: bool = True,
         fake: bool = False,
+        repeat_first_batch: bool = False,
     ):
         self.batch_size = batch_size
         self.ot = ot
@@ -39,6 +40,8 @@ class SurgeXTDataset(torch.utils.data.Dataset):
         if fake:
             self.dataset_file = None
             return
+
+        self.repeat_first_batch = repeat_first_batch
 
         self.dataset_file = h5py.File(dataset_file, "r")
 
@@ -93,6 +96,8 @@ class SurgeXTDataset(torch.utils.data.Dataset):
         )
 
     def _index_dataset(self, ds: h5py.Dataset, idx: Union[int, Sequence[int]]):
+        if self.repeat_first_batch:
+            return ds[: self.batch_size]
         if isinstance(idx, int):
             start_idx = idx * self.batch_size
             end_idx = start_idx + self.batch_size
