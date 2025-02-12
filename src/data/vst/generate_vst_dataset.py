@@ -80,7 +80,9 @@ def make_spectrogram(audio: np.ndarray, sample_rate: float) -> np.ndarray:
         n_fft=n_fft,
         hop_length=hop_length,
         window=window,
+        center=False,
     )
+    print(spec.shape)
     spec_db = librosa.power_to_db(spec, ref=np.max)
     return spec_db
 
