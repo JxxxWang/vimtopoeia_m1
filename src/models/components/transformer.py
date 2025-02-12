@@ -878,11 +878,11 @@ class PatchEmbed(nn.Module):
             stride=stride,
         )
 
-        self.num_tokens = self._get_num_tokens()
+        self.num_tokens = self._get_num_tokens(in_channels, spec_shape)
 
-    def _get_num_tokens(self):
+    def _get_num_tokens(self, in_channels, spec_shape):
         x = torch.randn(
-            1, self.in_channels, *self.spec_shape, device=self.projection.weight.device
+            1, in_channels, *spec_shape, device=self.projection.weight.device
         )
         out_shape = self.projection(self.pad(x)).shape
         return math.prod(out_shape[-2:])
