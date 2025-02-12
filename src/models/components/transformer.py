@@ -959,7 +959,7 @@ class AudioSpectrogramTransformer(nn.Module):
         for block in self.blocks[:-1]:
             x = block(x)
 
-        embed_tokens = self.embed_token.expand(x.shape[0], -1, -1)
+        embed_tokens = self.embed_tokens.expand(x.shape[0], -1, -1)
         x = torch.cat((embed_tokens, x), dim=1)
 
         x = self.blocks[-1](x)
