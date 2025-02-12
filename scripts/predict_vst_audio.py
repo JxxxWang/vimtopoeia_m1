@@ -164,8 +164,11 @@ def main(
             )
 
             if rerender_target:
+                target_params_ = target_params[j].numpy()
+                target_params_ = (target_params_ + 1) / 2
+                target_params_ = np.clip(target_params_, 0, 1)
                 target_param_dict, target_note = SURGE_MINI_PARAM_SPEC.from_numpy(
-                    target_params[j].numpy()
+                    target_params_
                 )
                 new_target = render_params(
                     plugin,
