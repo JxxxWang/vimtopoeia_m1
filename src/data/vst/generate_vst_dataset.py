@@ -110,7 +110,6 @@ def generate_sample(
         )
 
         plugin = load_plugin(plugin_path)
-        load_preset(plugin, preset_path)
         output = render_params(
             plugin,
             params,
