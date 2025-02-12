@@ -164,9 +164,9 @@ def main(
             os.makedirs(sample_dir, exist_ok=True)
 
             row_params = pred_params[j].numpy()
-            row_params = (row_params + 1) / 2
-            row_params = np.clip(row_params, 0, 1)
-            row_params_dict, note = param_spec.from_numpy(row_params)
+            row_params_scaled = (row_params + 1) / 2
+            row_params_scaled = np.clip(row_params_scaled, 0, 1)
+            row_params_dict, note = param_spec.from_numpy(row_params_scaled)
 
             load_preset(plugin, preset_path)
             pred_audio = render_params(
@@ -219,8 +219,8 @@ def main(
             )
 
             params_to_csv(
-                (target_params[j].numpy() + 1) / 2.0,
-                row_params,
+                target_params[j].numpy(),
+                row_params_scaled,
                 os.path.join(sample_dir, "params.csv"),
                 param_spec,
             )
