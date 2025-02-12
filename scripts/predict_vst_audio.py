@@ -164,10 +164,13 @@ def main(
             )
 
             if rerender_target:
+                target_param_dict, target_note = SURGE_MINI_PARAM_SPEC.from_numpy(
+                    target_params[j].numpy()
+                )
                 new_target = render_params(
                     plugin,
-                    target_params[j].numpy(),
-                    int(note),
+                    target_param_dict,
+                    int(target_note),
                     velocity,
                     note_duration_seconds,
                     signal_duration_seconds,
