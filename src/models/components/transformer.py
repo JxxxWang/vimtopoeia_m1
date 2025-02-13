@@ -930,7 +930,9 @@ class AudioSpectrogramTransformer(nn.Module):
         )
 
         self.positional_encoding = PositionalEncoding(
-            d_model, self.patch_embed.num_tokens, init="norm0.02"
+            d_model,
+            self.patch_embed.num_tokens + n_conditioning_outputs,
+            init="norm0.02",
         )
         self.embed_tokens = nn.Parameter(
             torch.empty(1, n_conditioning_outputs, d_model).normal_(0.0, 1e-6)
@@ -955,16 +957,15 @@ class AudioSpectrogramTransformer(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # produce input sequence
         x = self.patch_embed(x)
-        x = self.positional_encoding(x)
-
-        # apply transformer
-        for block in self.blocks[:-1]:
-            x = block(x)
 
         embed_tokens = self.embed_tokens.expand(x.shape[0], -1, -1)
         x = torch.cat((embed_tokens, x), dim=1)
 
-        x = self.blocks[-1](x)
+        x = self.positional_encoding(x)
+
+        # apply transformer
+        for block in self.blocks:
+            x = block(x)
 
         # take just the embed tokens
         x = x[:, : self.embed_tokens.shape[1]]
