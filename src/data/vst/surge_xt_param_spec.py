@@ -1538,7 +1538,7 @@ SURGE_SIMPLE_PARAM_SPEC = ParamSpec(
             name="a_noise_volume", min=0.0, max=1.0, constant_val_p=0.67
         ),
         ContinuousParameter(
-            name="a_osc_1_pitch", min=0.0, max=1.0, constant_val_p=0.5, constant_val=0.8
+            name="a_osc_1_pitch", min=0.0, max=1.0, constant_val_p=0.5, constant_val=0.5
         ),
         ContinuousParameter(name="a_osc_1_sawtooth", min=0.0, max=1.0),
         ContinuousParameter(name="a_osc_1_width", min=0.0, max=1.0),
@@ -1547,7 +1547,7 @@ SURGE_SIMPLE_PARAM_SPEC = ParamSpec(
         ContinuousParameter(name="a_osc_1_pulse", min=0.0, max=1.0),
         ContinuousParameter(name="a_osc_1_triangle", min=0.0, max=1.0),
         ContinuousParameter(
-            name="a_osc_2_pitch", min=0.0, max=1.0, constant_val_p=0.5, constant_val=0.8
+            name="a_osc_2_pitch", min=0.0, max=1.0, constant_val_p=0.5, constant_val=0.5
         ),
         ContinuousParameter(name="a_osc_2_sawtooth", min=0.0, max=1.0),
         ContinuousParameter(name="a_osc_2_width", min=0.0, max=1.0),
@@ -1556,7 +1556,7 @@ SURGE_SIMPLE_PARAM_SPEC = ParamSpec(
         ContinuousParameter(name="a_osc_2_pulse", min=0.0, max=1.0),
         ContinuousParameter(name="a_osc_2_triangle", min=0.0, max=1.0),
         ContinuousParameter(
-            name="a_osc_3_pitch", min=0.0, max=1.0, constant_val_p=0.5, constant_val=0.8
+            name="a_osc_3_pitch", min=0.0, max=1.0, constant_val_p=0.5, constant_val=0.5
         ),
         ContinuousParameter(name="a_osc_3_sawtooth", min=0.0, max=1.0),
         ContinuousParameter(name="a_osc_3_width", min=0.0, max=1.0),
@@ -1564,6 +1564,9 @@ SURGE_SIMPLE_PARAM_SPEC = ParamSpec(
         ContinuousParameter(name="a_osc_3_volume", min=0.0, max=1.0),
         ContinuousParameter(name="a_osc_3_pulse", min=0.0, max=1.0),
         ContinuousParameter(name="a_osc_3_triangle", min=0.0, max=1.0),
+        ContinuousParameter(
+            name="a_lfo_1_amplitude", min=0.0, max=1.0, constant_val_p=0.67
+        ),
         ContinuousParameter(name="a_lfo_1_attack", min=0.0, max=1.0),
         ContinuousParameter(name="a_lfo_1_decay", min=0.0, max=1.0),
         ContinuousParameter(name="a_lfo_1_deform", min=0.0, max=1.0),
