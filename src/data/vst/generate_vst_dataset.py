@@ -109,7 +109,6 @@ def generate_sample(
         )
 
         output = render_params(
-            plugin,
             params,
             note,
             velocity,
