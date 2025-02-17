@@ -322,8 +322,6 @@ def main(
     else:
         raise ValueError(f"Invalid param_spec: {param_spec}")
 
-    file_already_exists = os.path.exists(data_file)
-
     with h5py.File(data_file, "w") as f:
         make_dataset(
             f,
@@ -339,7 +337,6 @@ def main(
             signal_duration_seconds,
             min_loudness,
             param_spec,
-            file_already_exists,
         )
 
 
