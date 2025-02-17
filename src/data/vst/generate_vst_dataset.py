@@ -308,7 +308,7 @@ def make_dataset(
 
         sample_batch.append(sample)
         if len(sample_batch) == sample_batch_size:
-            save_samples(sample_batch, audio_dataset, mel_dataset, param_dataset)
+            save_samples(sample_batch, audio_dataset, mel_dataset, param_dataset, sample_batch_start)
             sample_batch = []
             sample_batch_start += sample_batch_size
 
