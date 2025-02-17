@@ -196,7 +196,6 @@ def create_dataset_and_get_first_unwritten_idx(
     name: str,
     shape: Tuple[int, ...],
     dtype: np.dtype,
-    compression: str,
 ) -> Tuple[h5py.Dataset, int]:
     logger.info(f"Looking for dataset {name}...")
     if name in h5py_file:
@@ -205,7 +204,7 @@ def create_dataset_and_get_first_unwritten_idx(
         return dataset, get_first_unwritten_idx(dataset)
 
     dataset = h5py_file.create_dataset(
-        name, shape=shape, dtype=dtype, compression=compression
+        name, shape=shape, dtype=dtype
     )
     return dataset, 0
 
@@ -223,21 +222,18 @@ def create_datasets_and_get_start_idx(
         "audio",
         (num_samples, channels, sample_rate * signal_duration_seconds),
         dtype=np.float16,
-        compression="gzip",
     )
     mel_dataset, mel_start_idx = create_dataset_and_get_first_unwritten_idx(
         hdf5_file,
         "mel_spec",
         (num_samples, 2, 128, 401),
         dtype=np.float32,
-        compression="gzip",
     )
     param_dataset, param_start_idx = create_dataset_and_get_first_unwritten_idx(
         hdf5_file,
         "param_array",
         (num_samples, num_params),  # +1 for MIDI note
         dtype=np.float32,
-        compression="gzip",
     )
 
     return (
@@ -308,7 +304,13 @@ def make_dataset(
 
         sample_batch.append(sample)
         if len(sample_batch) == sample_batch_size:
-            save_samples(sample_batch, audio_dataset, mel_dataset, param_dataset, sample_batch_start)
+            save_samples(
+                sample_batch,
+                audio_dataset,
+                mel_dataset,
+                param_dataset,
+                sample_batch_start,
+            )
             sample_batch = []
             sample_batch_start += sample_batch_size
 
