@@ -61,12 +61,12 @@ def instantiate_datamodule(data_cfg: DictConfig):
 
 @click.command()
 @click.argument("wandb_id", type=str)
-@click.option("--log-dir", "-l", type=str)
-@click.option("--ckpt_type", "-c", type=str)
-@click.option("--device", "-d", type=str)
+@click.option("--log-dir", "-l", type=str, default="logs")
+@click.option("--ckpt_type", "-c", type=str, default="last")
+@click.option("--device", "-d", type=str, default="cuda")
 def main(
     wandb_id: str,
-    log_dir: str = "logs/",
+    log_dir: str = "logs",
     ckpt_type: Literal["best", "last"] = "last",
     device: str = "cuda",
 ):
