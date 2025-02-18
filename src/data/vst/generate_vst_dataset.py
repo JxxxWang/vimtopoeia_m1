@@ -284,7 +284,7 @@ def make_dataset(
     plugin = load_plugin(plugin_path)
 
     sample_batch = []
-    sample_batch_start = 0
+    sample_batch_start = start_idx
 
     for i in trange(start_idx, num_samples):
         logger.info(f"Making sample {i}")
