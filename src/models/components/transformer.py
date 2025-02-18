@@ -100,12 +100,12 @@ class LearntProjection(nn.Module):
             proj = proj.repeat(num_params, 1)
             proj = proj + 1e-4 * torch.randn_like(proj)
 
-            self._in_projection = nn.Parameter(proj)
-            self._out_projection = nn.Parameter(proj.T)
+            self._in_projection = nn.Parameter(proj.clone())
+            self._out_projection = nn.Parameter(proj.T.clone())
         else:
             proj = torch.randn(num_params, d_model) / math.sqrt(d_model)
-            self._in_projection = nn.Parameter(proj)
-            self._out_projection = nn.Parameter(proj.T)
+            self._in_projection = nn.Parameter(proj.clone())
+            self._out_projection = nn.Parameter(proj.T.clone())
 
         self.var_penalty = var_penalty
 
