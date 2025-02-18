@@ -199,6 +199,23 @@ class WithinChunkShuffledSampler(torch.utils.data.Sampler):
             yield row.tolist()
 
 
+class ShuffledSampler(torch.utils.data.Sampler):
+    def __init__(self, batch_size: int, num_batches: int):
+        self.batch_size = batch_size
+        self.num_batches = num_batches
+
+    def __len__(self):
+        return self.num_batches
+
+    def __iter__(self):
+        samples = np.random.permutation(self.num_batches * self.batch_size)
+
+        for i in range(self.num_batches):
+            sample = samples[i * self.batch_size : (i + 1) * self.batch_size]
+            sample = np.sort(sample)
+            yield sample
+
+
 class ShiftedBatchSampler(torch.utils.data.BatchSampler):
     def __init__(self, batch_size: int, num_batches: int):
         self.batch_size = batch_size
@@ -293,7 +310,8 @@ class SurgeDataModule(LightningDataModule):
             # sampler=WithinChunkShuffledSampler(
             #     self.batch_size, len(self.train_dataset), 4
             # ),
-            sampler=ShiftedBatchSampler(self.batch_size, len(self.train_dataset)),
+            # sampler=ShiftedBatchSampler(self.batch_size, len(self.train_dataset)),
+            sampler=ShuffledSampler(self.batch_size, len(self.train_dataset)),
             # shuffle=True,
         )
 
