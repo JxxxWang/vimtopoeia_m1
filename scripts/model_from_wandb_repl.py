@@ -71,7 +71,7 @@ def main(
     device: str = "cuda",
 ):
     log_dir = Path(log_dir)
-    possible_wandb_dirs = log_dir.glob(f"**/*{wandb_id}/")
+    possible_wandb_dirs = list(log_dir.glob(f"**/*{wandb_id}/"))
     logger.info(f"Found {len(possible_wandb_dirs)} log dirs matching wandb id")
 
     ckpts_and_hparams = map(
