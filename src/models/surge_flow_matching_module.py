@@ -52,9 +52,6 @@ class SurgeFlowMatchingModule(LightningModule):
         validation_cfg_strength: float = 4.0,
         test_sample_steps: int = 100,
         test_cfg_strength: float = 4.0,
-        sinkhorn_reg: float = 0.05,
-        sinkhorn_thresh: float = 1e-6,
-        ot_replace: bool = True,
         compile: bool = False,
         params_per_token: int = 2,
     ):
