@@ -252,9 +252,15 @@ class SurgeFlowMatchingModule(LightningModule):
         )
 
     def setup(self, stage: str) -> None:
-        if self.hparams.compile:
+        if not self.hparams.compile:
+            return
+
+        import torch._dynamo.eval_frame
+        if not isinstance(self.vector_field, torch._dynamo.eval_frame.OptimizedModule):
             self.vector_field = torch.compile(self.vector_field)
-            self.encoder = torch.compile(self.encoder)
+
+        if not isinstance(self.encoder, torch._dynamo.eval_frame.OptimizedModule):
+        self.encoder = torch.compile(self.encoder)
 
     def on_before_optimizer_step(self, optimizer) -> None:
         vf_norms = grad_norm(self.vector_field, 2.0)
