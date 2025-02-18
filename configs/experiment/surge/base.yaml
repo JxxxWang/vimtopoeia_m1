@@ -4,7 +4,7 @@
 # python train.py experiment=example
 
 defaults:
-  - override /data: surge_mini
+  - override /data: surge_simple
   - override /callbacks: default_surge
   - override /trainer: gpu
   - _self_
@@ -12,7 +12,7 @@ defaults:
 # all parameters below will be merged with parameters from default configurations set above
 # this allows you to overwrite only specified parameters
 
-experiment_name: surge-mini
+experiment_name: surge-simple
 
 tags:
   - surge-mini
