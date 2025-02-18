@@ -12,9 +12,12 @@ from omegaconf import DictConfig, OmegaConf
 def wandb_dir_to_ckpt_and_hparams(
     wandb_dir: Path, ckpt_type: Literal["best", "last"]
 ) -> Tuple[Path, Path]:
-    log_dir = wandb_dir.parent.parent
-    hparam_file = log_dir / "csv" / "hparams.yaml"
+    log_dir = wandb_dir.parent
     ckpt_dir = log_dir / "checkpoints"
+
+    csv_dir = log_dir / "csv" 
+    hparam_files = csv_dir.glob("**/hparams.yaml")
+    hparam_file = max(hparam_files, key=lambda x: x.stat().st_mtime)
 
     if ckpt_type == "last":
         logger.info(f"Using last checkpoint for {log_dir}")
