@@ -12,7 +12,7 @@ from omegaconf import DictConfig, OmegaConf
 def wandb_dir_to_ckpt_and_hparams(
     wandb_dir: Path, ckpt_type: Literal["best", "last"]
 ) -> Tuple[Path, Path]:
-    log_dir = wandb_dir.parent
+    log_dir = wandb_dir.parent.parent
     hparam_file = log_dir / "csv" / "hparams.yaml"
     ckpt_dir = log_dir / "checkpoints"
 
