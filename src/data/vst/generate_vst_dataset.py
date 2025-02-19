@@ -338,6 +338,7 @@ def make_dataset(
 @click.option("--signal_duration_seconds", "-d", type=float, default=4.0)
 @click.option("--min_loudness", "-l", type=float, default=-55.0)
 @click.option("--param_spec", "-t", type=str, default="surge_xt")
+@click.option("--sample_batch_size", "-b", type=int, default=32)
 def main(
     data_file: str,
     num_samples: int,
@@ -352,6 +353,7 @@ def main(
     signal_duration_seconds: float = 4.0,
     min_loudness: float = -55.0,
     param_spec: str = "surge_xt",
+    sample_batch_size: int = 32,
 ):
     if param_spec in ("surge", "surge_xt"):
         param_spec = SURGE_XT_PARAM_SPEC
@@ -377,6 +379,7 @@ def main(
             signal_duration_seconds,
             min_loudness,
             param_spec,
+            sample_batch_size,
         )
 
 
