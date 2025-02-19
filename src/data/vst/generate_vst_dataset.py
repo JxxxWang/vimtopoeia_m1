@@ -1,7 +1,7 @@
 import hashlib
 import random
 from dataclasses import dataclass
-from typing import List, Tuple
+from typing import List, Tuple, Any
 
 import click
 import h5py
@@ -197,6 +197,7 @@ def create_dataset_and_get_first_unwritten_idx(
     name: str,
     shape: Tuple[int, ...],
     dtype: np.dtype,
+    compression: Any,
 ) -> Tuple[h5py.Dataset, int]:
     logger.info(f"Looking for dataset {name}...")
     if name in h5py_file:
@@ -204,9 +205,7 @@ def create_dataset_and_get_first_unwritten_idx(
         dataset = h5py_file[name]
         return dataset, get_first_unwritten_idx(dataset)
 
-    dataset = h5py_file.create_dataset(
-        name, shape=shape, dtype=dtype
-    )
+    dataset = h5py_file.create_dataset(name, shape=shape, dtype=dtype, compression=compression)
     return dataset, 0
 
 
@@ -223,21 +222,21 @@ def create_datasets_and_get_start_idx(
         "audio",
         (num_samples, channels, sample_rate * signal_duration_seconds),
         dtype=np.float16,
-        compression=hdf5plugin.Blosc2()
+        compression=hdf5plugin.Blosc2(),
     )
     mel_dataset, mel_start_idx = create_dataset_and_get_first_unwritten_idx(
         hdf5_file,
         "mel_spec",
         (num_samples, 2, 128, 401),
         dtype=np.float32,
-        compression=hdf5plugin.Blosc2()
+        compression=hdf5plugin.Blosc2(),
     )
     param_dataset, param_start_idx = create_dataset_and_get_first_unwritten_idx(
         hdf5_file,
         "param_array",
         (num_samples, num_params),  # +1 for MIDI note
         dtype=np.float32,
-        compression=hdf5plugin.Blosc2()
+        compression=hdf5plugin.Blosc2(),
     )
 
     return (
