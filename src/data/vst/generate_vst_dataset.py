@@ -5,6 +5,7 @@ from typing import List, Tuple
 
 import click
 import h5py
+import hdf5plugin
 import librosa
 import numpy as np
 import rootutils
@@ -222,18 +223,21 @@ def create_datasets_and_get_start_idx(
         "audio",
         (num_samples, channels, sample_rate * signal_duration_seconds),
         dtype=np.float16,
+        compression=hdf5plugin.Blosc2()
     )
     mel_dataset, mel_start_idx = create_dataset_and_get_first_unwritten_idx(
         hdf5_file,
         "mel_spec",
         (num_samples, 2, 128, 401),
         dtype=np.float32,
+        compression=hdf5plugin.Blosc2()
     )
     param_dataset, param_start_idx = create_dataset_and_get_first_unwritten_idx(
         hdf5_file,
         "param_array",
         (num_samples, num_params),  # +1 for MIDI note
         dtype=np.float32,
+        compression=hdf5plugin.Blosc2()
     )
 
     return (
