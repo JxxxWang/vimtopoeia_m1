@@ -100,12 +100,11 @@ class LearntProjection(nn.Module):
             proj = proj.repeat(num_params, 1)
             proj = proj + 1e-4 * torch.randn_like(proj)
 
-            self._in_projection = nn.Parameter(proj.clone())
-            self._out_projection = nn.Parameter(proj.T.clone())
+            self._projection = nn.Parameter(proj)
+            # self._out_projection = nn.Parameter(proj.T.clone())
         else:
             proj = torch.randn(num_params, d_model) / math.sqrt(d_model)
-            self._in_projection = nn.Parameter(proj.clone())
-            self._out_projection = nn.Parameter(proj.T.clone())
+            self._projection = nn.Parameter(proj.clone())
 
         self.var_penalty = var_penalty
 
@@ -140,11 +139,11 @@ class LearntProjection(nn.Module):
 
     @property
     def in_projection(self):
-        return self._in_projection
+        return self._projection
 
     @property
     def out_projection(self):
-        return self._out_projection
+        return self._projection.T
 
     def param_to_token(self, x: torch.Tensor) -> torch.Tensor:
         values = torch.einsum("bn,nd->bnd", x, self.in_projection)
@@ -177,7 +176,7 @@ class LearntProjection(nn.Module):
         # we apply L1 penalty to the assignment matrix
         penalty = self.assignment.abs().mean()
         if self.var_penalty:
-            var_penalty = self._in_projection.std(dim=0).mean()
+            var_penalty = self.in_projection.std(dim=0).mean()
             penalty = penalty + var_penalty
 
         return penalty

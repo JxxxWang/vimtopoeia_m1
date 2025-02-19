@@ -27,7 +27,7 @@ vector_field:
     sym_init: true
     var_penalty: false
     initial_ffn: true
-    final_ffn: false
+    final_ffn: true
   num_layers: 8
   d_model: 768
   conditioning_dim: ${model.encoder.d_model}
