@@ -1,0 +1,9 @@
+# @package _global_
+
+defaults:
+  - surge/base
+  - override /model: surge_flow_full
+  - override /data: surge
+  - _self_
+
+run_name: flow_full
