@@ -14,6 +14,7 @@ class SurgeFeedForwardModule(LightningModule):
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler,
         compile: bool = False,
+        warmup_steps: int = 0,
     ):
         super().__init__()
 
