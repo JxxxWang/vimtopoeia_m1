@@ -76,9 +76,11 @@ class ConditionalResidualMLPBlock(nn.Module):
         self.cond = nn.Sequential(nn.GELU(), nn.Linear(d_model, d_model * 3))
 
     def forward(self, x: torch.Tensor, c: torch.Tensor) -> torch.Tensor:
-        a, g, b = self.cond(self.norm(x))
-
         res = x
+
+        x = self.norm(x)
+        a, g, b = self.cond(c).chunk(3, dim=-1)
+
         x = g * self.norm(x) + b
         x = self.net(x)
         return res + a * x
