@@ -7,3 +7,6 @@ defaults:
 
 experiment_name: surge-simple
 run_name: flowmlp
+
+callbacks:
+  plot_projii: null
