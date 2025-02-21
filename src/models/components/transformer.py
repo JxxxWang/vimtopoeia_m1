@@ -973,3 +973,55 @@ class AudioSpectrogramTransformer(nn.Module):
         x = self.out_proj(x)
 
         return x
+
+
+class ASTWithProjectionHead(AudioSpectrogramTransformer):
+    """Based on the AST from https://arxiv.org/abs/2104.01778, but adapted to pre-norm
+    transformer.
+
+    Components:
+        1. patch split with overlap
+        2. linear token projection
+        3. class (embedding) token
+        4. transformer encoder
+        5. output linear projection
+    """
+
+    def __init__(
+        self,
+        d_model: int = 768,
+        d_out: int = 16,
+        n_heads: int = 8,
+        n_layers: int = 16,
+        patch_size: int = 16,
+        patch_stride: int = 10,
+        input_channels: int = 2,
+        spec_shape: Tuple[int] = (128, 401),
+    ):
+        super().__init__(
+            d_model=d_model,
+            n_heads=n_heads,
+            n_layers=n_layers,
+            n_conditioning_outputs=1,
+            patch_size=patch_size,
+            patch_stride=patch_stride,
+            input_channels=input_channels,
+            spec_shape=spec_shape,
+        )
+
+        self.prediction_head = nn.Sequential(
+            nn.LayerNorm(d_model),
+            nn.Linear(d_model, d_model),
+            nn.GELU(),
+            nn.Linear(d_model, d_model),
+        )
+
+        self.out_proj = nn.Linear(d_model, d_out)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = super().forward(x)
+
+        x = self.prediction_head(x) + x
+        x = self.out_proj(x)
+
+        return x

@@ -1,0 +1,12 @@
+# @package _global_
+
+defaults:
+  - surge/base
+  - override /model: surge_ffn
+  - _self_
+
+experiment_name: surge-simple
+run_name: ffn
+
+callbacks:
+  plot_projii: null

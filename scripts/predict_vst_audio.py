@@ -168,7 +168,9 @@ def main(
             row_params = pred_params[j].numpy()
             row_params_scaled = (row_params + 1) / 2
             row_params_scaled = np.clip(row_params_scaled, 0, 1)
-            row_params_dict, note = param_spec.from_numpy(row_params_scaled, exclude=exclude)
+            row_params_dict, note = param_spec.from_numpy(
+                row_params_scaled, exclude=exclude
+            )
 
             load_preset(plugin, preset_path)
             pred_audio = render_params(
