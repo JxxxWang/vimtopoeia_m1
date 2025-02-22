@@ -709,6 +709,7 @@ class ApproxEquivTransformer(nn.Module):
         skip_first_norm: bool = False,
         adaln_mode: Literal["basic", "zero"] = "basic",
         zero_init: bool = True,
+        outer_residual: bool = False,
     ):
         super().__init__()
 
@@ -773,6 +774,7 @@ class ApproxEquivTransformer(nn.Module):
 
         self.pe_penalty = pe_penalty
         self.projection_penalty = projection_penalty
+        self.outer_residual = outer_residual
 
     def apply_dropout(self, z: torch.tensor, rate: float = 0.1):
         if rate == 0.0:
@@ -810,6 +812,9 @@ class ApproxEquivTransformer(nn.Module):
     ) -> torch.Tensor:
         if conditioning is None:
             conditioning = self.cfg_dropout_token.expand(x.shape[0], -1)
+
+        outer_residual = x if self.outer_residual else None
+
         x = self.projection.param_to_token(x)
 
         t = self.time_encoding(t)
@@ -837,6 +842,9 @@ class ApproxEquivTransformer(nn.Module):
             x = layer(x, z_)
 
         x = self.projection.token_to_param(x)
+
+        if outer_residual is not None:
+            x = x + outer_residual
 
         return x
 
