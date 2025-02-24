@@ -60,13 +60,17 @@ class AudioFolderDataset(torch.utils.data.Dataset):
             num_frames = int(sample_rate * self.segment_length_seconds)
             audio = f.read(num_frames)
 
-        channels, _ = audio.shape
+        channels, samples = audio.shape
         if channels == 1:
             audio = np.stack([audio, audio], axis=0)
         elif channels > 2:
             raise ValueError(
                 f"Audio must have two or fewer channels. Found {channels}."
             )
+
+        if samples < num_frames:
+            # pad with zeros
+            audio = np.pad(audio, [(0, 0), (0, num_frames - samples)], mode="constant")
 
         spec = make_spectrogram(audio, sample_rate)
         if self.mean is not None:
