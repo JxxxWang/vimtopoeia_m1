@@ -30,11 +30,24 @@ def make_spectrogram(audio: np.ndarray, sample_rate: float) -> np.ndarray:
 
 
 class AudioFolderDataset(torch.utils.data.Dataset):
-    def __init__(self, root: str, segment_length_seconds: float = 4.0):
+    def __init__(
+        self,
+        root: str,
+        segment_length_seconds: float = 4.0,
+        stats_file: Optional[str] = None,
+    ):
         self.segment_length_seconds = segment_length_seconds
 
         self.root = Path(root)
         self.files = list(self.root.glob("*.wav"))
+
+        if stats_file is not None:
+            with np.load(stats_file) as stats:
+                self.mean = stats["mean"]
+                self.std = stats["std"]
+        else:
+            self.mean = None
+            self.std = None
 
     def __len__(self):
         return len(self.files)
@@ -56,6 +69,11 @@ class AudioFolderDataset(torch.utils.data.Dataset):
             )
 
         spec = make_spectrogram(audio, sample_rate)
+        if self.mean is not None:
+            spec = (spec - self.mean) / self.std
+
+        audio = torch.from_numpy(audio).to(dtype=torch.float32)
+        spec = torch.from_numpy(spec).to(dtype=torch.float32)
 
         return {
             "audio": audio,
