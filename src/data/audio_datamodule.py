@@ -62,7 +62,7 @@ class AudioFolderDataset(torch.utils.data.Dataset):
 
         channels, samples = audio.shape
         if channels == 1:
-            audio = np.stack([audio, audio], axis=0)
+            audio = np.concatenate([audio, audio], axis=0)
         elif channels > 2:
             raise ValueError(
                 f"Audio must have two or fewer channels. Found {channels}."
