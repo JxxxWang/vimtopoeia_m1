@@ -35,6 +35,7 @@ class AudioFolderDataset(torch.utils.data.Dataset):
         root: str,
         segment_length_seconds: float = 4.0,
         stats_file: Optional[str] = None,
+        amp_scale: float = 0.5,
         sample_rate: float = 44100.0,
     ):
         self.segment_length_seconds = segment_length_seconds
@@ -50,6 +51,7 @@ class AudioFolderDataset(torch.utils.data.Dataset):
             self.mean = None
             self.std = None
 
+        self.amp_scale = amp_scale
         self.sample_rate = sample_rate
 
     def __len__(self):
@@ -65,7 +67,7 @@ class AudioFolderDataset(torch.utils.data.Dataset):
             num_frames = int(sample_rate * length_seconds)
             audio = f.read(num_frames)
 
-        channels, samples = audio.shape
+        channels, _ = audio.shape
         if channels == 1:
             audio = np.concatenate([audio, audio], axis=0)
         elif channels > 2:
@@ -84,6 +86,8 @@ class AudioFolderDataset(torch.utils.data.Dataset):
             audio = np.pad(
                 audio, [(0, 0), (0, target_samples - audio.shape[1])], mode="constant"
             )
+
+        audio = audio * self.amp_scale
 
         spec = make_spectrogram(audio, sample_rate)
         if self.mean is not None:
