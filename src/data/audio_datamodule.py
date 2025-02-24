@@ -72,6 +72,8 @@ class AudioDataModule(LightningDataModule):
         num_workers: int = 0,
         shuffle: bool = True
     ):
+        super().__init__()
+
         self.root = root
         self.segment_length_seconds = segment_length_seconds
         self.batch_size = batch_size
