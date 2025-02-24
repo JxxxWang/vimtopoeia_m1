@@ -89,6 +89,7 @@ class AudioDataModule(LightningDataModule):
         batch_size: int = 32,
         num_workers: int = 0,
         shuffle: bool = True,
+        stats_file: Optional[str] = None,
     ):
         super().__init__()
 
@@ -97,10 +98,11 @@ class AudioDataModule(LightningDataModule):
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.shuffle = shuffle
+        self.stats_file = stats_file
 
     def setup(self, stage: Optional[str] = None):
         self.predict_dataset = AudioFolderDataset(
-            self.root, self.segment_length_seconds
+            self.root, self.segment_length_seconds, self.stats_file
         )
 
     def predict_dataloader(self):
