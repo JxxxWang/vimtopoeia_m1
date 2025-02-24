@@ -55,9 +55,11 @@ class AudioFolderDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx: int):
         file = self.files[idx]
 
+        length_seconds = self.segment_length_seconds - 0.05
+
         with AudioFile(str(file), "r") as f:
             sample_rate = f.samplerate
-            num_frames = int(sample_rate * self.segment_length_seconds)
+            num_frames = int(sample_rate * length_seconds)
             audio = f.read(num_frames)
 
         channels, samples = audio.shape
@@ -68,9 +70,9 @@ class AudioFolderDataset(torch.utils.data.Dataset):
                 f"Audio must have two or fewer channels. Found {channels}."
             )
 
-        if samples < num_frames:
-            # pad with zeros
-            audio = np.pad(audio, [(0, 0), (0, num_frames - samples)], mode="constant")
+        start_samples = int(0.05 * sample_rate)
+        end_samples = num_frames - (start_samples + samples)
+        audio = np.pad(audio, [(0, 0), (start_samples, end_samples)], mode="constant")
 
         spec = make_spectrogram(audio, sample_rate)
         if self.mean is not None:
