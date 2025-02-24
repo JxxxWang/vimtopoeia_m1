@@ -43,7 +43,7 @@ class AudioFolderDataset(torch.utils.data.Dataset):
         file = self.files[idx]
 
         with AudioFile(str(file), "r") as f:
-            sample_rate = f.sample_rate
+            sample_rate = f.samplerate
             num_frames = int(sample_rate * self.segment_length_seconds)
             audio = f.read(num_frames)
 
@@ -70,7 +70,7 @@ class AudioDataModule(LightningDataModule):
         segment_length_seconds: float = 4.0,
         batch_size: int = 32,
         num_workers: int = 0,
-        shuffle: bool = True
+        shuffle: bool = True,
     ):
         super().__init__()
 
