@@ -32,6 +32,7 @@ import click
 import librosa
 import numpy as np
 import pandas as pd
+from dtw import dtw
 from kymatio.numpy import Scattering1D
 from loguru import logger
 from pedalboard.io import AudioFile
@@ -111,9 +112,36 @@ def compute_jtfs_distance(
     return dist
 
 
+def compute_mfcc(target: np.ndarray, sample_rate: float = 44100.0) -> np.ndarray:
+    window_length = int(0.05 * sample_rate)
+    hop_length = int(0.01 * sample_rate)
+
+    mfcc = librosa.feature.mfcc(
+        y=target,
+        sr=sample_rate,
+        n_mfcc=20,
+        n_fft=window_length,
+        hop_length=hop_length,
+        n_mels=128,
+    )
+
+    return mfcc
+
+
 def compute_wmfcc(target: np.ndarray, pred: np.ndarray) -> float:
     logger.info("Computing wMFCC...")
-    return 0.0
+
+    target_mfcc = compute_mfcc(target)
+    pred_mfcc = compute_mfcc(pred)
+
+    target_mfcc = target_mfcc.reshape(-1, target_mfcc.shape[-1])
+    pred_mfcc = pred_mfcc.reshape(-1, pred_mfcc.shape[-1])
+
+    def l1(a, b):
+        return np.mean(np.abs(a - b))
+
+    dist = dtw(target_mfcc.T, pred_mfcc.T, dist_method=l1, distance_only=True)
+    return dist.normalizedDistance
 
 
 def compute_f0(target: np.ndarray, pred: np.ndarray) -> float:
