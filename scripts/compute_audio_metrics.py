@@ -32,6 +32,8 @@ import click
 import librosa
 import numpy as np
 import pandas as pd
+from kymatio.numpy import Scattering1D
+from loguru import logger
 from pedalboard.io import AudioFile
 
 
@@ -74,6 +76,7 @@ def compute_mel_specs(y: np.ndarray, sample_rate: float = 44100.0):
 
 
 def compute_mss(target: np.ndarray, pred: np.ndarray) -> float:
+    logger.info("Computing MSS...")
     target_specs = compute_mel_specs(target)
     pred_specs = compute_mel_specs(pred)
 
@@ -85,19 +88,41 @@ def compute_mss(target: np.ndarray, pred: np.ndarray) -> float:
     return dist
 
 
-def compute_jtfs(target: np.ndarray, pred: np.ndarray) -> float:
-    return 0.0
+scatter = None
+
+
+def compute_jtfs(y: np.ndarray, J: int = 10, Q: int = 12):
+    global scatter
+    if scatter is None:
+        scatter = Scattering1D(J, Q)
+
+    return scatter(y)
+
+
+def compute_jtfs_distance(
+    target: np.ndarray, pred: np.ndarray, J: int = 10, Q: int = 12
+) -> float:
+    logger.info("Computing JTFS...")
+
+    target_jtfs = compute_jtfs(target, J, Q)
+    pred_jtfs = compute_jtfs(pred, J, Q)
+
+    dist = np.mean(np.abs(target_jtfs - pred_jtfs))
+    return dist
 
 
 def compute_wmfcc(target: np.ndarray, pred: np.ndarray) -> float:
+    logger.info("Computing wMFCC...")
     return 0.0
 
 
 def compute_f0(target: np.ndarray, pred: np.ndarray) -> float:
+    logger.info("Computing f0...")
     return 0.0
 
 
 def compute_amp_env(target: np.ndarray, pred: np.ndarray) -> float:
+    logger.info("Computing amp env...")
     return 0.0
 
 
@@ -112,7 +137,7 @@ def compute_metrics_on_dir(audio_dir: Path) -> dict[str, float]:
     pred_file.close()
 
     mss = compute_mss(target, pred)
-    jtfs = compute_jtfs(target, pred)
+    jtfs = compute_jtfs_distance(target, pred)
     wmfcc = compute_wmfcc(target, pred)
     f0 = compute_f0(target, pred)
     amp_env = compute_amp_env(target, pred)
