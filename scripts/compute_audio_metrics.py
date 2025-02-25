@@ -66,8 +66,8 @@ def compute_amp_env(target: np.ndarray, pred: np.ndarray) -> float:
 
 
 def compute_metrics_on_dir(audio_dir: Path) -> dict[str, float]:
-    target = AudioFile(audio_dir / "target.wav")
-    pred = AudioFile(audio_dir / "pred.wav")
+    target = AudioFile(str(audio_dir / "target.wav"))
+    pred = AudioFile(str(audio_dir / "pred.wav"))
 
     target = target.read(target.frames)
     pred = pred.read(pred.frames)
@@ -127,7 +127,10 @@ def main(audio_dir: str, output_dir: str, num_workers: int):
 
     metric_dfs = []
     with ProcessPoolExecutor(max_workers=num_workers) as executor:
-        futures = [executor.submit(compute_metrics, sublist, output_dir) for sublist in sublists]
+        futures = [
+            executor.submit(compute_metrics, sublist, output_dir)
+            for sublist in sublists
+        ]
 
         for future in as_completed(futures):
             metric_file = future.result()
