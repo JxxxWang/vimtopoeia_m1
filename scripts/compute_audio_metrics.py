@@ -94,7 +94,7 @@ scatter = None
 def compute_jtfs(y: np.ndarray, J: int = 10, Q: int = 12):
     global scatter
     if scatter is None:
-        scatter = Scattering1D(J, Q)
+        scatter = Scattering1D(J=J, Q=Q, shape=y.shape[-1])
 
     return scatter(y)
 
@@ -202,6 +202,23 @@ def main(audio_dir: str, output_dir: str, num_workers: int):
 
     df = pd.concat(metric_dfs)
     df.to_csv(output_dir / "metrics.csv")
+
+    columnwise_means = df.mean(axis=0)
+    columnwise_stds = df.std(axis=0)
+    print("Means...")
+    print(columnwise_means)
+
+    print("Stds...")
+    print(columnwise_stds)
+
+    # make new DF of aggregated metrics, with mean and std columns
+    df = pd.DataFrame(
+        {
+            "mean": columnwise_means,
+            "std": columnwise_stds,
+        }
+    )
+    df.to_csv(output_dir / "aggregated_metrics.csv")
 
 
 if __name__ == "__main__":
