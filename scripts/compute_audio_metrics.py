@@ -204,8 +204,8 @@ def compute_sot(target: np.ndarray, pred: np.ndarray) -> float:
     target_stft = get_stft(target)
     pred_stft = get_stft(pred)
 
-    target_stft = target_stft / target_stft.sum(axis=-1, keepdims=True)
-    pred_stft = pred_stft / pred_stft.sum(axis=-1, keepdims=True)
+    target_stft = target_stft / np.clip(target_stft.sum(axis=-1, keepdims=True), 1e-6, None)
+    pred_stft = pred_stft / np.clip(pred_stft.sum(axis=-1, keepdims=True), 1e-6, None)
 
     dists = batched_wasserstein_distance_np(target_stft, pred_stft)
     return dists.mean()
