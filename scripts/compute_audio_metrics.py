@@ -147,6 +147,7 @@ def compute_wmfcc(target: np.ndarray, pred: np.ndarray) -> float:
 
 
 pesto_model = None
+@torch.no_grad()
 def get_pesto_activations(audio: np.ndarray, sample_rate: float = 44100.0) -> np.ndarray:
     global pesto_model
     if pesto_model is None:
