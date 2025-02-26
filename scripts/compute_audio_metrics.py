@@ -31,6 +31,8 @@ from typing import List
 import click
 import librosa
 import numpy as np
+import torch
+import pesto
 import pandas as pd
 from dtw import dtw
 from kymatio.numpy import Scattering1D
@@ -144,9 +146,26 @@ def compute_wmfcc(target: np.ndarray, pred: np.ndarray) -> float:
     return dist.normalizedDistance
 
 
+def get_pesto_activations(audio: np.ndarray, sample_rate: float = 44100.0) -> np.ndarray:
+    x = torch.from_numpy(audio)
+    x = x.mean(0)
+    _, _, _, activations = pesto.predict(x, sample_rate)
+
+    return activations.numpy()
+
+
 def compute_f0(target: np.ndarray, pred: np.ndarray) -> float:
     logger.info("Computing f0...")
-    return 0.0
+    target_activations = get_pesto_activations(target)
+    pred_activations = get_pesto_activations(pred)
+
+    target_norm = np.linalg.norm(target, 2)
+    pred_norm = np.linalg.norm(pred, 2)
+    cosine_sim = np.dot(target_activations, pred_activations) / (
+        target_norm * pred_norm
+    )
+    return cosine_sim
+
 
 
 def compute_amp_env(target: np.ndarray, pred: np.ndarray) -> float:
