@@ -175,6 +175,42 @@ def compute_f0(target: np.ndarray, pred: np.ndarray) -> float:
     return np.mean(np.abs(target_f0 - pred_f0))
 
 
+def get_stft(y: np.ndarray, sample_rate: float = 44100.0):
+    win_length = int(0.05 * sample_rate)
+    hop_length = int(0.02 * sample_rate)
+    stft = librosa.stft(
+        y.mean(axis=0),
+        n_fft=win_length,
+        hop_length=hop_length,
+        win_length=win_length,
+        window="hann",
+    )
+    stft_mag = np.abs(stft)
+    return stft_mag
+
+
+def batched_wasserstein_distance_np(
+    hist1: np.ndarray,
+    hist2: np.ndarray,
+) -> np.ndarray:
+    bin_width = 1 / hist1.shape[-1]
+    cdf1 = np.cumsum(hist1, axis=-1)
+    cdf2 = np.cumsum(hist2, axis=-1)
+    distance = np.sum(np.abs(cdf1 - cdf2), axis=-1) * bin_width
+    return distance
+
+
+def compute_sot(target: np.ndarray, pred: np.ndarray) -> float:
+    target_stft = get_stft(target)
+    pred_stft = get_stft(pred)
+
+    target_stft = target_stft / target_stft.sum(axis=-1)
+    pred_stft = pred_stft / pred_stft.sum(axis=-1)
+
+    dists = batched_wasserstein_distance_np(target_stft, pred_stft)
+    return dists.mean()
+
+
 def compute_amp_env(target: np.ndarray, pred: np.ndarray) -> float:
     logger.info("Computing amp env...")
     win_length = int(0.05 * 44100)
@@ -209,10 +245,10 @@ def compute_metrics_on_dir(audio_dir: Path) -> dict[str, float]:
     # jtfs = compute_jtfs_distance(target, pred)
     jtfs = 0.0
     wmfcc = compute_wmfcc(target, pred)
-    f0 = compute_f0(target, pred)
+    sot = compute_sot(target, pred)
     amp_env = compute_amp_env(target, pred)
 
-    return dict(mss=mss, jtfs=jtfs, wmfcc=wmfcc, f0=f0, amp_env=amp_env)
+    return dict(mss=mss, jtfs=jtfs, wmfcc=wmfcc, sot=sot, amp_env=amp_env)
 
 
 def compute_metrics(audio_dirs: List[Path], output_dir: Path):
