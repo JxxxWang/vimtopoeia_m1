@@ -177,7 +177,7 @@ def main(
             sample_dir = os.path.join(output_dir, f"sample_{file_idx}")
             os.makedirs(sample_dir, exist_ok=True)
 
-            row_params = pred_params[j].numpy()
+            row_params = pred_params[j].float().numpy()
             row_params_scaled = (row_params + 1) / 2
             row_params_scaled = np.clip(row_params_scaled, 0, 1)
             row_params_dict, note = param_spec.from_numpy(
