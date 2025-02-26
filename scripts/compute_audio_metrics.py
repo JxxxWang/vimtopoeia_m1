@@ -166,7 +166,7 @@ def get_pesto_activations(
     target_confidence, pred_confidence = confidence.chunk(2, 0)
 
     mask = (target_confidence > 0.85) & (pred_confidence > 0.85)
-    return target_f0[mask], pred_f0[mask]
+    return target_f0[mask].numpy(), pred_f0[mask].numpy()
 
 
 def compute_f0(target: np.ndarray, pred: np.ndarray) -> float:
