@@ -147,8 +147,12 @@ def compute_wmfcc(target: np.ndarray, pred: np.ndarray) -> float:
 
 
 pesto_model = None
+
+
 @torch.no_grad()
-def get_pesto_activations(target: np.ndarray, pred: np.ndarray, sample_rate: float = 44100.0) -> np.ndarray:
+def get_pesto_activations(
+    target: np.ndarray, pred: np.ndarray, sample_rate: float = 44100.0
+) -> np.ndarray:
     global pesto_model
     if pesto_model is None:
         pesto_model = pesto.load_model("mir-1k_g7", step_size=20.0)
@@ -158,21 +162,17 @@ def get_pesto_activations(target: np.ndarray, pred: np.ndarray, sample_rate: flo
     x = x.mean(1)
     preds, confidence, _, _ = pesto_model(x, sample_rate)
 
-    return preds.numpy()
+    target_f0, pred_f0 = preds.chunk(2, 0)
+    target_confidence, pred_confidence = confidence.chunk(2, 0)
+
+    mask = (target_confidence > 0.85) & (pred_confidence > 0.85)
+    return target_f0[mask], pred_f0[mask]
 
 
 def compute_f0(target: np.ndarray, pred: np.ndarray) -> float:
     logger.info("Computing f0...")
-    target_activations = get_pesto_activations(target)
-    pred_activations = get_pesto_activations(pred)
-
-    target_norm = np.linalg.vector_norm(target_activations, axis=-1, ord=2)
-    pred_norm = np.linalg.vector_norm(pred_activations, axis=-1, ord=2)
-    cosine_sim = np.einsum("ij,ij->i", target_activations, pred_activations) / (
-        target_norm * pred_norm
-    )
-    return cosine_sim.mean()
-
+    target_f0, pred_f0 = get_pesto_activations(target, pred)
+    return np.mean(np.abs(target_f0 - pred_f0))
 
 
 def compute_amp_env(target: np.ndarray, pred: np.ndarray) -> float:
@@ -180,13 +180,17 @@ def compute_amp_env(target: np.ndarray, pred: np.ndarray) -> float:
     win_length = int(0.05 * 44100)
     hop_length = int(0.025 * 44100)
 
-    target_rms = librosa.feature.rms(y=target, frame_length=win_length, hop_length=hop_length)
-    pred_rms = librosa.feature.rms(y=pred, frame_length=win_length, hop_length=hop_length)
+    target_rms = librosa.feature.rms(
+        y=target.mean(axis=0), frame_length=win_length, hop_length=hop_length
+    )
+    pred_rms = librosa.feature.rms(
+        y=pred.mean(axis=0), frame_length=win_length, hop_length=hop_length
+    )
 
     target_norm = np.linalg.vector_norm(target_rms, axis=-1, ord=2)
     pred_norm = np.linalg.vector_norm(pred_rms, axis=-1, ord=2)
 
-    cosine_sim = np.einsum("ij,ij->i", target_rms, pred_rms) / (target_norm * pred_norm)
+    cosine_sim = np.dot(target_rms, pred_rms) / (target_norm * pred_norm)
 
     return cosine_sim.mean()
 
