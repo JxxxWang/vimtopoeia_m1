@@ -201,6 +201,7 @@ def batched_wasserstein_distance_np(
 
 
 def compute_sot(target: np.ndarray, pred: np.ndarray) -> float:
+    logger.info("Computing SOT...")
     target_stft = get_stft(target)
     pred_stft = get_stft(pred)
 
