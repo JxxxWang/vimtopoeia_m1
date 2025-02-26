@@ -161,10 +161,10 @@ def compute_f0(target: np.ndarray, pred: np.ndarray) -> float:
 
     target_norm = np.linalg.norm(target, 2)
     pred_norm = np.linalg.norm(pred, 2)
-    cosine_sim = np.dot(target_activations, pred_activations) / (
+    cosine_sim = np.einsum("ij,ij->i", target_activations, pred_activations) / (
         target_norm * pred_norm
     )
-    return cosine_sim
+    return cosine_sim.mean()
 
 
 
