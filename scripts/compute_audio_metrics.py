@@ -184,7 +184,7 @@ def get_stft(y: np.ndarray, sample_rate: float = 44100.0):
         hop_length=hop_length,
         win_length=win_length,
         window="hann",
-    )
+    ).T
     stft_mag = np.abs(stft)
     return stft_mag
 
@@ -204,8 +204,8 @@ def compute_sot(target: np.ndarray, pred: np.ndarray) -> float:
     target_stft = get_stft(target)
     pred_stft = get_stft(pred)
 
-    target_stft = target_stft / target_stft.sum(axis=-1)
-    pred_stft = pred_stft / pred_stft.sum(axis=-1)
+    target_stft = target_stft / target_stft.sum(axis=-1, keepdims=True)
+    pred_stft = pred_stft / pred_stft.sum(axis=-1, keepdims=True)
 
     dists = batched_wasserstein_distance_np(target_stft, pred_stft)
     return dists.mean()
