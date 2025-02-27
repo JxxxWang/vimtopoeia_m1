@@ -34,7 +34,7 @@ class AudioFolderDataset(torch.utils.data.Dataset):
         self,
         root: str,
         segment_length_seconds: float = 4.0,
-        stats_file: Optional[str] = None,
+        reference_stats_file: Optional[str] = None,
         amp_scale: float = 0.5,
         sample_rate: float = 44100.0,
     ):
@@ -43,16 +43,38 @@ class AudioFolderDataset(torch.utils.data.Dataset):
         self.root = Path(root)
         self.files = list(self.root.glob("*.wav"))
 
-        if stats_file is not None:
-            with np.load(stats_file) as stats:
-                self.mean = stats["mean"]
-                self.std = stats["std"]
-        else:
-            self.mean = None
-            self.std = None
-
         self.amp_scale = amp_scale
         self.sample_rate = sample_rate
+
+    def _load_stats(self, reference_stats_file: Optional[str]):
+        if reference_stats_file is None:
+            self.mean = None
+            self.std = None
+            return
+
+        with np.load(reference_stats_file) as stats:
+            self.mean = stats["mean"]
+            self.std = stats["std"]
+
+        # TODO: think this through better --- how do we rescale after prediction?
+
+        # dataset_stats_file = AudioFolderDataset.get_stats_file_path(self.root)
+        # if not dataset_stats_file.exists():
+        #     return
+        #
+        # dataset_stats = np.load(dataset_stats_file)
+        # dataset_mean = dataset_stats["mean"]
+        # dataset_std = dataset_stats["std"]
+        #
+        # D = self.mean - dataset_mean
+        # beta = np.mean(D)
+        #
+        # frob_inner = np.sum(self.std * dataset_std)
+        # frob_ood = np.linalg.norm(dataset_std) ** 2
+        # gamma = frob_inner / frob_ood
+        #
+        # self.mean = self.mean - beta
+        # self.std = self.std / gamma
 
     @staticmethod
     def get_stats_file_path(root: Union[str, Path]) -> Path:
