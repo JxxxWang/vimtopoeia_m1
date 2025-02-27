@@ -19,5 +19,9 @@ AUDIO_DIR=${JOB_DIR}/audio
 
 mkdir -p $AUDIO_DIR
 
+echo Running predict job on $JOB_DIR.
+echo Predictions folder is $PRED_DIR
+echo Audio folder is $AUDIO_DIR
+
 module load hdf5-parallel
 apptainer exec ../containers/torch.sif ./renderscript.sh $PRED_DIR $AUDIO_DIR $DATASET
