@@ -1,5 +1,5 @@
 #!/bin/bash
-#$ -l h_rt=120:0:0
+#$ -l h_rt=1:0:0
 #$ -l gpu=1
 #$ -cwd
 #$ -j y
