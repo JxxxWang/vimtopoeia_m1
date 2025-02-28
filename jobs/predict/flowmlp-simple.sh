@@ -30,7 +30,7 @@ python src/eval.py \
     model.test_cfg_strength=2.0 \
     model.test_sample_steps=100 \
     paths.log_dir=/data/EECS-C4DM-Fazekas/benhayes/surge-preds/flowmlp_simple/ \
-    data=surge \
+    data=surge_simple \
     callbacks=eval_surge \
     mode=predict \
     data.batch_size=1024 \
