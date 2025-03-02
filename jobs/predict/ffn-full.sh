@@ -27,8 +27,6 @@ mamba activate perm
 module load gcc
 python src/eval.py \
     experiment=surge/ffn_full \
-    model.test_cfg_strength=2.0 \
-    model.test_sample_steps=100 \
     paths.log_dir=/data/EECS-C4DM-Fazekas/benhayes/surge-preds/ffn_full/ \
     data=surge \
     callbacks=eval_surge \
