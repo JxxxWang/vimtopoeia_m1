@@ -46,6 +46,8 @@ class AudioFolderDataset(torch.utils.data.Dataset):
         self.amp_scale = amp_scale
         self.sample_rate = sample_rate
 
+        self._load_stats(reference_stats_file)
+
     def _load_stats(self, reference_stats_file: Optional[str]):
         if reference_stats_file is None:
             self.mean = None
