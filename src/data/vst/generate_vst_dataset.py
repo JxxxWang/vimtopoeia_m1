@@ -19,15 +19,6 @@ from src.data.vst import load_plugin, param_specs, render_params  # noqa
 from src.data.vst.param_spec import ParamSpec  # noqa
 
 
-def sample_midi_note(min_pitch: int = 32, max_pitch: int = 96):
-    # Validate pitch range
-    if min_pitch > max_pitch:
-        raise ValueError("min_pitch must be less than or equal to max_pitch.")
-
-    pitch = random.randint(min_pitch, max_pitch)
-    return pitch
-
-
 @dataclass
 class VSTDataSample:
     synth_params: dict[str, float]
