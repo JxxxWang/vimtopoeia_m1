@@ -2,13 +2,13 @@
 #$ -l h_rt=24:0:0
 #$ -l h_vmem=4G
 #$ -pe smp 16
-#$ -l rocky
+#$ -l centos
 #$ -l node_type=ddy
 #$ -cwd
 #$ -j y
 #$ -o dlogs/
 #$ -e dlogs/
-#$ -t 9
+#$ -t 11-12
 
 JOB_DIR=$(sed -n "${SGE_TASK_ID}p" jobs/eval/eval-jobs.txt)
 
