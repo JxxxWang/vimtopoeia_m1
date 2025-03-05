@@ -94,7 +94,7 @@ if __name__ == "__main__":
     # filename = "/data/scratch/acw585/surge/train.hdf5"
     filename = sys.argv[1]
 
-    if os.path.splitext(filename)[-1] == ".hdf5":
+    if os.path.splitext(filename)[-1] == ".h5":
         get_stats_hdf5(filename)
     else:
         get_stats_directory(filename)
