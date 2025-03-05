@@ -5,7 +5,7 @@ defaults:
   - override /model: surge_flowmlp
   - _self_
 
-experiment_name: surge-simple
+experiment_name: surge-simple-onehot
 run_name: flowmlp
 
 model:

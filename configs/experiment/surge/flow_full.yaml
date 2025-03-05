@@ -7,7 +7,7 @@ defaults:
   - _self_
 
 run_name: flow
-experiment_name: surge-full
+experiment_name: surge-full-onehot
 
 model:
   num_params: 300

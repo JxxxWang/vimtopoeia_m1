@@ -8,5 +8,5 @@ defaults:
 model:
   num_params: 92
 
-experiment_name: surge-simple
+experiment_name: surge-simple-onehot
 run_name: flow

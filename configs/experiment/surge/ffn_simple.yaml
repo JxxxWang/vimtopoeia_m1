@@ -9,7 +9,7 @@ model:
   net:
     d_out: 92
 
-experiment_name: surge-simple
+experiment_name: surge-simple-onehot
 run_name: ffn
 
 callbacks:
