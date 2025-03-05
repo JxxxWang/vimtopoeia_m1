@@ -2,7 +2,7 @@
 
 defaults:
   - surge/base
-  - override /model: surge_flowmlp_full
+  - override /model: surge_flowmlp
   - override /data: surge
   - _self_
 
