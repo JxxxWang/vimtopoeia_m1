@@ -18,7 +18,7 @@
 # -l h_vmem=20G
 # -pe smp 12
 
-source jobs/predict/get-ckpt-from-wandb.sh dao56ssw
+source jobs/predict/get-ckpt-from-wandb.sh k9jdjpx8
 echo "Using wandb directory: $WANDB_DIR"
 echo "Using checkpoint: $CKPT_PATH"
 
