@@ -357,6 +357,9 @@ def compute_individual_parameter_loss(
 def param_loss(x_hat: torch.Tensor, x: torch.Tensor, param_spec: str) -> torch.Tensor:
     param_spec = param_specs[param_spec]
 
+    x = 0.5 * (x + 1.0)
+    x_hat = 0.5 * (x_hat + 1.0)
+
     synth_params = [(p, len(p)) for p in param_spec.synth_params]
     note_params = [(p, len(p)) for p in param_spec.note_params]
 
