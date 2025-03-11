@@ -144,7 +144,7 @@ class Encoder(nn.Module):
         specs = x.chunk(2, dim=1)
         spec_features = [self.channelwise_cnn(s) for s in specs]
         x = self.mixing_cnn(torch.cat(spec_features, dim=1))
-        x = x.view(x.shape[0], 1, -1)
+        x = x.view(x.shape[0], -1)
         x = self.out(x)
         return x.squeeze(1)
 
