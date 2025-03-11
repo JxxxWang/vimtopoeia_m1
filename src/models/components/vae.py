@@ -262,7 +262,7 @@ class FlowVAE(nn.Module):
         latent_flow_batch_norm_between_layers: bool = False,
         regression_flow_hidden_dim: int = 512,
         regression_flow_num_layers: int = 6,
-        regression_flow_num_blocks: int = 2,
+        regression_flow_num_blocks: int = 3,
         regression_flow_batch_norm_within_layers: bool = True,
         regression_flow_batch_norm_between_layers: bool = False,
         regression_flow_dropout: float = 0.3,
@@ -397,7 +397,7 @@ def compute_flowvae_loss(
 
 
 if __name__ == "__main__":
-    params = 300
+    params = 92
     enc = Encoder(params, (128, 401))
     dec = Decoder(params, 2, (128, 401))
     vae = FlowVAE(enc, dec, params)
