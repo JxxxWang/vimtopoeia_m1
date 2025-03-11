@@ -397,11 +397,12 @@ def compute_flowvae_loss(
 
 
 if __name__ == "__main__":
-    enc = Encoder(200, (128, 401))
-    dec = Decoder(200, 2, (128, 401))
-    vae = FlowVAE(enc, dec, 200)
+    params = 300
+    enc = Encoder(params, (128, 401))
+    dec = Decoder(params, 2, (128, 401))
+    vae = FlowVAE(enc, dec, params)
     fake_spec = torch.randn(9, 2, 128, 401)
-    fake_params = torch.rand(9, 200)
+    fake_params = torch.rand(9, params)
     out = vae(fake_spec)
     losses = compute_flowvae_loss(out, fake_spec, fake_params)
     print(losses)

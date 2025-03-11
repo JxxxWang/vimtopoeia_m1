@@ -41,12 +41,28 @@ class SurgeFlowVAEModule(LightningModule):
 
         return losses, mel_spec, target_params
 
+    def get_beta(self) -> float:
+        step = self.global_step
+        if step > self.hparams.beta_warmup_steps:
+            return self.hparams.beta_max
+
+        return self.hparams.beta_start + (
+            self.global_step / self.hparams.beta_warmup_steps
+        ) * (self.hparams.beta_max - self.hparams.beta_start)
+
     def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
         losses, *_ = self.model_step(batch)
-        losses = {f"train/{k}": v for k, v in losses.items()}
-        loss = sum(losses.values())
+        beta = self.get_beta()
+        loss = (
+            losses["reconstruction_loss"]
+            + beta * losses["latent_loss"]
+            + losses["param_loss"]
+        )
+
+        losses_to_log = {f"train/{k}": v for k, v in losses.items()}
         self.log("train/loss", loss, on_step=True, on_epoch=True, prog_bar=True)
-        self.log_dict(losses, on_step=True, on_epoch=True)
+        self.log_dict(losses_to_log, on_step=True, on_epoch=True)
+        self.log("train/beta", beta, on_step=True, prog_bar=True)
 
         return loss
 
