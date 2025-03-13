@@ -17,7 +17,7 @@ vector_field:
   n_params: 1
   d_model: 128
   d_enc: 128
-  conditioning_dim: ${model.encoder.d_model}
+  conditioning_dim: 128
   num_layers: 9
 
 # training
