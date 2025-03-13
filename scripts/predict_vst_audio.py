@@ -81,19 +81,20 @@ def write_spectrograms(
 
 
 def params_to_csv(
-    target_params: np.ndarray,
-    pred_params: np.ndarray,
+    target_synth_params: dict[str, float],
+    target_note_params: dict[str, float],
+    pred_synth_params: dict[str, float],
+    pred_note_params: dict[str, float],
     save_path: str,
     param_spec: ParamSpec,
 ) -> None:
     """Write the target and predicted parameters to a CSV file."""
-    row_names = param_spec.names
+    row_names = list(pred_synth_params.keys()) + list(pred_note_params.keys())
 
-    data = {"Pred": pred_params}
-    if target_params is not None:
-        data["Target"] = target_params
+    synth_df = pd.DataFrame({"pred": pred_synth_params, "target": target_synth_params})
+    note_df = pd.DataFrame({"pred": pred_note_params, "target": target_note_params})
+    df = pd.concat([synth_df, note_df])
 
-    df = pd.DataFrame(data, index=row_names)
     df.to_csv(save_path)
 
 
@@ -218,12 +219,12 @@ def main(
                     os.path.join(sample_dir, "spec.png"),
                 )
 
-            # params_to_csv(
-            #     target_params[j].numpy() if target_params is not None else None,
-            #     row_params,
-            #     os.path.join(sample_dir, "params.csv"),
-            #     param_spec,
-            # )
+            params_to_csv(
+                target_params[j].numpy() if target_params is not None else None,
+                row_params,
+                os.path.join(sample_dir, "params.csv"),
+                param_spec,
+            )
 
         current_offset += pred_params.shape[0]
 
