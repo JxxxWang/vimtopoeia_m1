@@ -14,7 +14,7 @@ optimizer:
 
 vector_field:
   _target_: src.models.components.residual_mlp.ConditionalResidualMLP
-  n_params: ${model.num_params}
+  n_params: 1
   d_model: 128
   d_enc: 128
   conditioning_dim: ${model.encoder.d_model}

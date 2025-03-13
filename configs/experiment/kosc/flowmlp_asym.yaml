@@ -9,7 +9,7 @@ run_name: flowmlp_asym
 model:
   vector_field:
     projection:
-      num_params: ${mul:${data.k},3}
+      n_params: ${mul:${data.k},3}
 
 data:
   break_symmetry: true
