@@ -9,8 +9,7 @@ run_name: flowmlp
 
 model:
   vector_field:
-    projection:
-      n_params: ${mul:${data.k},3}
+    n_params: ${mul:${data.k},3}
 
 data:
   ot: true
