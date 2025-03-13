@@ -131,13 +131,18 @@ class ConditionalResidualMLP(nn.Module):
 
         t = self.time_encoding(t)
 
-        t = t.unsqueeze(1).repeat(1, c.shape[1], 1)
+        if c.ndim == 3:
+            t = t.unsqueeze(1).repeat(1, c.shape[1], 1)
         z = torch.cat([c, t], dim=-1)
         z = self.conditioning_ffn(z)
 
         x = self.in_proj(x)
         for i, layer in enumerate(self.net):
-            x = layer(x, z[:, i])
+            if z.ndim == 2:
+                z_ = z
+            else:
+                z_ = z[:, i]
+            x = layer(x, z_)
         x = self.out_proj(x)
 
         return x
