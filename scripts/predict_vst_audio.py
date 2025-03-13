@@ -220,8 +220,10 @@ def main(
                 )
 
             params_to_csv(
-                target_params[j].numpy() if target_params is not None else None,
-                row_params,
+                target_synth_params if target_params is not None else None,
+                target_note_params if target_params is not None else None,
+                synth_params,
+                note_params,
                 os.path.join(sample_dir, "params.csv"),
                 param_spec,
             )
