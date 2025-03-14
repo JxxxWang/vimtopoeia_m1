@@ -7,7 +7,7 @@ import ot as pot
 import torch
 from lightning import LightningModule
 from scipy.optimize import linear_sum_assignment
-from torch.nn.functional import soft_margin_loss
+from lightning.pytorch.utilities import grad_norm
 
 from src.metrics import (ChamferDistance, LinearAssignmentDistance,
                          LogSpectralDistance, SpectralDistance)
@@ -475,6 +475,16 @@ class KSinFlowMatchingModule(LightningModule):
         if self.hparams.compile and stage == "fit":
             self.vector_field = torch.compile(self.vector_field)
             self.encoder = torch.compile(self.encoder)
+
+    def on_before_optimizer_step(self, optimizer) -> None:
+        encoder_norms = grad_norm(self.encoder, 2.0)
+        vf_norms = grad_norm(self.vector_field, 2.0)
+
+        encoder_norms = {f"encoder/{k}": v for k, v in encoder_norms.items()}
+        vf_norms = {f"vector_field/{k}": v for k, v in vf_norms.items()}
+
+        self.log_dict(encoder_norms, on_step=True, on_epoch=True)
+        self.log_dict(vf_norms, on_step=True, on_epoch=True)
 
     def configure_optimizers(self) -> Dict[str, Any]:
         optimizer = self.hparams.optimizer(params=self.trainer.model.parameters())
