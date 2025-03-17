@@ -120,19 +120,30 @@ class ConditionalResidualMLP(nn.Module):
         if rate == 0.0:
             return z
 
-        dropout_mask = torch.rand(z.shape[0], 1, 1, device=z.device) > rate
-        return z.where(dropout_mask, self.cfg_dropout_token)
+        dropout_mask = torch.rand(z.shape[0], device=z.device) > rate
+        if z.ndim == 2:
+            dropout_mask = dropout_mask[..., None]
+            dropout_token = self.cfg_dropout_token[0]
+        elif z.ndim == 3:
+            dropout_mask = dropout_mask[..., None, None]
+            dropout_token = self.cfg_dropout_token
+        else:
+            raise ValueError("unexpected z shape")
+
+
+        return torch.where(dropout_mask, z, dropout_token)
 
     def forward(
         self, x: torch.Tensor, t: torch.Tensor, c: Optional[torch.Tensor]
     ) -> torch.Tensor:
         if c is None:
-            c = self.cfg_dropout_token.expand(x.shape[0], len(self.net), -1)
+            c = self.cfg_dropout_token.expand(x.shape[0], -1)
 
         t = self.time_encoding(t)
 
         if c.ndim == 3:
             t = t.unsqueeze(1).repeat(1, c.shape[1], 1)
+
         z = torch.cat([c, t], dim=-1)
         z = self.conditioning_ffn(z)
 
