@@ -109,6 +109,7 @@ class KOscDataset(torch.utils.data.Dataset):
         break_symmetry: bool,
         is_test: bool,
         seed: int,
+        debug_num_samples: Optional[int] = None,
     ):
         self.k = k
         self.signal_length = signal_length
@@ -122,6 +123,8 @@ class KOscDataset(torch.utils.data.Dataset):
         self.generator = torch.Generator(device=torch.device("cpu"))
 
         self.is_test = is_test
+
+        self.debug_num_samples = debug_num_samples
 
         self._init_dataset()
 
@@ -152,6 +155,10 @@ class KOscDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         # modulo max int to avoid overflows
         seed = (self.seed * idx) % sys.maxsize
+
+        if self.debug_num_samples is not None:
+            seed = seed % self.debug_num_samples
+
         params = self._sample_parameters(seed)
         render_fn = partial(
             make_sig, length=self.signal_length, break_symmetry=self.break_symmetry
@@ -179,6 +186,7 @@ class KOscDataModule(LightningDataModule):
         batch_size: int = 1024,
         ot: bool = False,
         num_workers: int = 0,
+        debug_num_samples: Optional[int] = None,
     ):
         super().__init__()
 
@@ -199,6 +207,7 @@ class KOscDataModule(LightningDataModule):
         self.num_workers = num_workers
 
         self.ot = ot
+        self.debug_num_samples =debug_num_samples
 
     def prepare_data(self):
         pass
@@ -213,6 +222,7 @@ class KOscDataModule(LightningDataModule):
                 self.break_symmetry,
                 False,
                 self.train_seed,
+                self.debug_num_samples,
             )
             val_ds = KOscDataset(
                 self.k,
@@ -222,6 +232,7 @@ class KOscDataModule(LightningDataModule):
                 self.break_symmetry,
                 False,
                 self.val_seed,
+                self.debug_num_samples,
             )
             self.train = torch.utils.data.DataLoader(
                 train_ds,
@@ -246,6 +257,7 @@ class KOscDataModule(LightningDataModule):
                 self.break_symmetry,
                 True,
                 self.test_seed,
+                self.debug_num_samples,
             )
             self.test = torch.utils.data.DataLoader(
                 test_ds,
