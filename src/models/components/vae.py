@@ -339,19 +339,19 @@ def latent_loss(
 
 def compute_individual_parameter_loss(
     x_hat: torch.Tensor, x: torch.Tensor, parameter: Parameter
-) -> torch.Tensor:
+) -> Tuple[torch.Tensor, bool]:
     if (
         isinstance(parameter, DiscreteLiteralParameter)
         or isinstance(parameter, CategoricalParameter)
     ) and parameter.encoding == "onehot":
         labels = x.argmax(dim=1)
-        # empirical temperature, normalization, and weight from le vaillant paper
-        loss = 0.2 * nn.functional.cross_entropy(x_hat / 0.2, labels) / x_hat.shape[-1]
+        # empirical temperature, and weight from le vaillant paper
+        loss = 0.2 * nn.functional.cross_entropy(x_hat / 0.2, labels)
+        return loss, True
     else:
         x_hat = torch.clamp(x_hat, min=0.0, max=1.0)
         loss = nn.functional.mse_loss(x_hat, x)
-
-    return loss
+        return loss, False
 
 
 def param_loss(x_hat: torch.Tensor, x: torch.Tensor, param_spec: str) -> torch.Tensor:
@@ -360,13 +360,25 @@ def param_loss(x_hat: torch.Tensor, x: torch.Tensor, param_spec: str) -> torch.T
     synth_params = [(p, len(p)) for p in param_spec.synth_params]
     note_params = [(p, len(p)) for p in param_spec.note_params]
 
-    loss = 0.0
     pointer = 0
+
+    discrete_loss = 0.0
+    continuous_loss = 0.0
+    discrete_count = 0
+
     for param, length in synth_params:
         x_param = x[:, pointer : pointer + length]
         x_hat_param = x_hat[:, pointer : pointer + length]
 
-        loss += compute_individual_parameter_loss(x_hat_param, x_param, param)
+        this_loss, is_discrete = compute_individual_parameter_loss(
+            x_hat_param, x_param, param
+        )
+
+        if is_discrete:
+            discrete_loss += this_loss
+            discrete_count += 1
+        else:
+            continuous_loss += this_loss
 
         pointer += length
 
@@ -374,9 +386,19 @@ def param_loss(x_hat: torch.Tensor, x: torch.Tensor, param_spec: str) -> torch.T
         x_param = x[:, pointer : pointer + length]
         x_hat_param = x_hat[:, pointer : pointer + length]
 
-        loss += compute_individual_parameter_loss(x_hat_param, x_param, param)
+        this_loss, is_discrete = compute_individual_parameter_loss(
+            x_hat_param, x_param, param
+        )
+
+        if is_discrete:
+            discrete_loss += this_loss
+            discrete_count += 1
+        else:
+            continuous_loss += this_loss
 
         pointer += length
+
+    loss = continuous_loss + discrete_loss / discrete_count
 
     return loss / (len(synth_params) + len(note_params))
 
