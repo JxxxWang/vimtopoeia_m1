@@ -9,6 +9,7 @@ defaults:
 model:
   net:
     latent_dim: 300
+  param_spec: surge_xt
 
 experiment_name: surge-full-onehot
 run_name: vae

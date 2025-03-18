@@ -20,6 +20,7 @@ class SurgeFlowVAEModule(LightningModule):
         beta_max: float = 0.2,
         beta_start: float = 0.1,
         beta_warmup_steps: int = 60_000,
+        param_spec: str = "surge_xt",
     ):
         super().__init__()
 
@@ -37,7 +38,7 @@ class SurgeFlowVAEModule(LightningModule):
         mel_spec = batch["mel_spec"]
 
         vae_out = self.net(mel_spec)
-        losses = compute_flowvae_loss(vae_out, mel_spec, target_params)
+        losses = compute_flowvae_loss(vae_out, mel_spec, target_params, self.param_spec)
 
         return losses, mel_spec, target_params
 
