@@ -17,7 +17,6 @@ vector_field:
   projection:
     _target_: src.models.components.transformer.KSinParamToTokenProjection
     d_model: ${model.vector_field.d_model}
-    filler_tokens: 0
   num_layers: 5
   d_model: 128
   conditioning_dim: ${model.encoder.out_dim}
