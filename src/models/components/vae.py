@@ -345,8 +345,8 @@ def compute_individual_parameter_loss(
         or isinstance(parameter, CategoricalParameter)
     ) and parameter.encoding == "onehot":
         labels = x.argmax(dim=1)
-        # empirical temperature and weight from le vaillant paper
-        loss = 0.2 * nn.functional.cross_entropy(x_hat / 0.2, labels)
+        # empirical temperature, normalization, and weight from le vaillant paper
+        loss = 0.2 * nn.functional.cross_entropy(x_hat / 0.2, labels) / x_hat.shape[-1]
     else:
         x_hat = torch.clamp(x_hat, min=0.0, max=1.0)
         loss = nn.functional.mse_loss(x_hat, x)
