@@ -20,13 +20,16 @@ scheduler:
   T_max: ${trainer.max_steps}
   eta_min: ${mul:${model.optimizer.lr},1e-2}
 
-warmup_steps: 15_000
+warmup_steps: 0
 
 optimizer:
   _target_: torch.optim.Adam
   _partial_: true
-  lr: 2e-4
+  lr: 1e-4
   weight_decay: 0.0
+
+beta_max: 0.01
+beta_start: 0.0
 
 # compile model for faster training with pytorch 2.0
 compile: true
