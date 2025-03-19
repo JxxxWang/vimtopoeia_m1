@@ -44,7 +44,7 @@ class SurgeFlowVAEModule(LightningModule):
             vae_out, mel_spec, target_params, self.hparams.param_spec
         )
 
-        return losses, mel_spec, target_params
+        return losses, mel_spec, target_params, vae_out
 
     def get_beta(self) -> float:
         step = self.global_step
@@ -56,7 +56,12 @@ class SurgeFlowVAEModule(LightningModule):
         ) * (self.hparams.beta_max - self.hparams.beta_start)
 
     def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
-        losses, *_ = self.model_step(batch)
+        losses, *_, vae_out = self.model_step(batch)
+        x_hat = vae_out.x_hat
+
+        self.log("train/param_mean", x_hat.mean(), on_step=True, on_epoch=True)
+        self.log("train/param_std", x_hat.std(), on_step=True, on_epoch=True)
+
         beta = self.get_beta()
         loss = (
             losses["reconstruction_loss"]
@@ -75,7 +80,12 @@ class SurgeFlowVAEModule(LightningModule):
         pass
 
     def validation_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int):
-        losses, *_ = self.model_step(batch)
+        losses, *_, vae_out = self.model_step(batch)
+        x_hat = vae_out.x_hat
+
+        self.log("val/param_mean", x_hat.mean(), on_step=False, on_epoch=True)
+        self.log("val/param_std", x_hat.std(), on_step=False, on_epoch=True)
+
         losses = {f"val/{k}": v for k, v in losses.items()}
         self.log_dict(losses, on_step=False, on_epoch=True, prog_bar=True)
 
