@@ -125,7 +125,7 @@ class Encoder(nn.Module):
             EncoderBlock(64, 128, (3, 5), (2, 2), (1, 2)),
             EncoderBlock(128, 256, (3, 5), (1, 4), (1, 2)),
             EncoderBlock(256, 512, (5, 5), (2, 2), 2),
-            nn.Conv2d(512, 512, (1, 1), (1, 1), 0),
+            nn.Conv2d(512, 1024, (1, 1), (1, 1), 0),
             nn.LeakyReLU(0.1),
         )
 
@@ -195,9 +195,9 @@ class Decoder(nn.Module):
     ):
         super().__init__()
 
-        self.in_proj = nn.Linear(latent_dim, 2048)
+        self.in_proj = nn.Linear(latent_dim, 4096)
         self.cnn = nn.Sequential(
-            DecoderBlock(512, 256, (5, 5), (2, 2), 2, (1, 1)),
+            DecoderBlock(1024, 256, (5, 5), (2, 2), 2, (1, 1)),
             DecoderBlock(256, 128, (3, 5), (1, 4), (1, 2), output_padding=(0, 0)),
             DecoderBlock(128, 64, (3, 5), (2, 2), (1, 2), output_padding=(1, 1)),
             DecoderBlock(64, 64, (3, 5), (2, 2), (1, 2), output_padding=(1, 0)),
@@ -250,7 +250,7 @@ class FlowVAE(nn.Module):
         latent_flow_batch_norm_within_layers: bool = True,
         latent_flow_batch_norm_between_layers: bool = False,
         regression_flow_hidden_dim: int = 512,
-        regression_flow_num_layers: int = 15,
+        regression_flow_num_layers: int = 16,
         regression_flow_num_blocks: int = 2,
         regression_flow_batch_norm_within_layers: bool = True,
         regression_flow_batch_norm_between_layers: bool = False,
