@@ -208,7 +208,7 @@ class Decoder(nn.Module):
 
     def forward(self, x):
         x = self.in_proj(x)
-        x = x.reshape(-1, 512, 2, 2)
+        x = x.reshape(-1, 1024, 2, 2)
         x = self.cnn(x)
         return x
 
