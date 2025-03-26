@@ -25,4 +25,5 @@ rm -rf ~/.triton/cache
 mamba activate perm
 module load gcc
 python src/train.py experiment=$EXPERIMENT \
+  logger.csv=null \
   seed=999
