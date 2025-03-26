@@ -108,7 +108,7 @@ def add_labels(ax: plt.Axes, spec: str):
 
     ax.set_xticks(centers)
     ax.set_xticklabels(labels)
-    ax.tick_params(axis="x", labelrotation=90, ha="right")
+    ax.tick_params(axis="x", labelrotation=90)
 
 
 def plot_assignment(proj: LearntProjection, spec: str):
