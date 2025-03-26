@@ -17,7 +17,7 @@
 # -l h_vmem=20G
 # -pe smp 12
 
-#$ -t 33-44
+#$ -t 29-44
 
 EXPERIMENT=$(sed -n "${SGE_TASK_ID}p" jobs/train/kosc/experiments.txt)
 

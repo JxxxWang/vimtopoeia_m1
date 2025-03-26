@@ -16,7 +16,7 @@ class KSinFeedForwardModule(LightningModule):
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler,
         compile: bool,
-        params_per_token: int = 2,
+        params_per_token: int = 3,
     ):
         super().__init__()
 
@@ -27,7 +27,9 @@ class KSinFeedForwardModule(LightningModule):
         if loss_fn == "mse":
             self.criterion = torch.nn.MSELoss()
         elif loss_fn == "chamfer":
-            self.criterion = ChamferLoss()
+            self.criterion = ChamferLoss(params_per_token)
+        elif loss_fn == "mse_sort":
+            self.criterion = MSESortLoss(params_per_token)
         else:
             raise NotImplementedError(f"Unsupported loss function: {loss_fn}")
 

@@ -94,6 +94,7 @@ class ConditionalResidualMLP(nn.Module):
         d_enc: int = 256,
         conditioning_dim: int = 512,
         num_layers: int = 6,
+        time_encoding: Literal["sinusoidal", "scalar"] = "sinusoidal",
     ):
         super().__init__()
 
@@ -105,7 +106,11 @@ class ConditionalResidualMLP(nn.Module):
         layers = [ConditionalResidualMLPBlock(d_model) for i in range(num_layers)]
         self.net = nn.Sequential(*layers)
 
-        self.time_encoding = SinusoidalEncoding(d_enc)
+        if time_encoding == "scalar":
+            self.time_encoding = nn.Identity()
+            d_enc = 1
+        else:
+            self.time_encoding = SinusoidalEncoding(d_enc)
 
         self.conditioning_ffn = nn.Sequential(
             nn.Linear(conditioning_dim + d_enc, d_model),

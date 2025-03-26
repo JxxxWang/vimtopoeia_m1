@@ -81,7 +81,7 @@ class KSinFlowMatchingModule(LightningModule):
         ot_replace: bool = True,
         freeze_for_first_n_steps: int = 0,
         compile: bool = False,
-        params_per_token: int = 2,
+        params_per_token: int = 3,
     ):
         super().__init__()
 
