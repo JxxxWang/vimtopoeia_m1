@@ -2,10 +2,10 @@ import os
 from pathlib import Path
 from typing import Literal, Tuple
 
-import matplotlib.pyplot as plt
 import click
-import numpy as np
 import hydra
+import matplotlib.pyplot as plt
+import numpy as np
 import rootutils
 import torch
 from IPython import embed
@@ -14,9 +14,9 @@ from omegaconf import DictConfig, OmegaConf
 
 rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
+from src.data.vst import param_specs
 from src.models.components.transformer import LearntProjection
 from src.utils import register_resolvers
-from src.data.vst import param_specs
 
 
 def wandb_dir_to_ckpt_and_hparams(
@@ -78,12 +78,14 @@ def instantiate_datamodule(data_cfg: DictConfig):
 
     return dm
 
+
 def sort_assignment(assignment: np.ndarray):
     assignment = np.abs(assignment)
     idxs = np.argsort(assignment, axis=-1)
     idxs = np.lexsort(idxs.T)
     assignment = assignment[idxs]
     return assignment
+
 
 def add_labels(ax: plt.Axes, spec: str):
     param_spec = param_specs[spec]
@@ -106,14 +108,16 @@ def add_labels(ax: plt.Axes, spec: str):
 
     ax.set_xticks(centers)
     ax.set_xticklabels(labels)
-
+    ax.tick_params(axis="x", labelrotation=90, ha="right")
 
 
 def plot_assignment(proj: LearntProjection, spec: str):
     assignment = proj.assignment.detach().cpu().numpy()
     assignment = sort_assignment(assignment)
 
-    fig, ax = plt.subplots(1, 1, figsize=(8, 8))
+    ratio = assignment.shape[1] / assignment.shape[0]
+
+    fig, ax = plt.subplots(1, 1, figsize=(32 * ratio, 32))
 
     maxval = np.abs(assignment).max().item()
     img = ax.imshow(
@@ -136,10 +140,11 @@ def plot_assignment(proj: LearntProjection, spec: str):
 
     return fig
 
+
 def plot_param2tok(proj: LearntProjection, out_dir: str, spec: str):
     assignment_fig = plot_assignment(proj, spec)
     os.makedirs(out_dir, exist_ok=True)
-    assignment_fig.savefig(f"{out_dir}/assignment.png")
+    assignment_fig.savefig(f"{out_dir}/assignment.pdf")
 
 
 @click.command()
