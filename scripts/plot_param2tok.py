@@ -16,6 +16,7 @@ rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
 
 from src.models.components.transformer import LearntProjection
 from src.utils import register_resolvers
+from src.data.vst import param_specs
 
 
 def wandb_dir_to_ckpt_and_hparams(
@@ -84,8 +85,31 @@ def sort_assignment(assignment: np.ndarray):
     assignment = assignment[idxs]
     return assignment
 
+def add_labels(ax: plt.Axes, spec: str):
+    param_spec = param_specs[spec]
 
-def plot_assignment(proj: LearntProjection):
+    synth_intervals = [(p.name, len(p)) for p in param_spec.synth_param_names]
+    note_intervals = [(p.name, len(p)) for p in param_spec.note_param_names]
+    intervals = synth_intervals + note_intervals
+    labels = [label for label, _ in intervals]
+    lengths = [length for _, length in intervals]
+
+    boundaries = np.cumsum(lengths)
+    boundaries = np.insert(boundaries, 0, 0)
+
+    centers = []
+    start = 0
+    for length in lengths:
+        center = start + (length - 1) / 2
+        centers.append(center)
+        start += length
+
+    ax.set_xticks(centers)
+    ax.set_xticklabels(labels)
+
+
+
+def plot_assignment(proj: LearntProjection, spec: str):
     assignment = proj.assignment.detach().cpu().numpy()
     assignment = sort_assignment(assignment)
 
@@ -103,6 +127,8 @@ def plot_assignment(proj: LearntProjection):
 
     ax.set_title("Assignment")
 
+    add_labels(ax, spec)
+
     ax.set_xlabel("params")
     ax.set_ylabel("tokens")
     fig.tight_layout()
@@ -110,8 +136,8 @@ def plot_assignment(proj: LearntProjection):
 
     return fig
 
-def plot_param2tok(proj: LearntProjection, out_dir: str):
-    assignment_fig = plot_assignment(proj)
+def plot_param2tok(proj: LearntProjection, out_dir: str, spec: str):
+    assignment_fig = plot_assignment(proj, spec)
     os.makedirs(out_dir, exist_ok=True)
     assignment_fig.savefig(f"{out_dir}/assignment.png")
 
@@ -119,12 +145,14 @@ def plot_param2tok(proj: LearntProjection, out_dir: str):
 @click.command()
 @click.argument("wandb_id", type=str)
 @click.argument("out_dir", type=str)
+@click.option("--spec", "-s", type=str, default="surge_xt")
 @click.option("--log-dir", "-l", type=str, default="logs")
 @click.option("--ckpt_type", "-c", type=str, default="last")
 @click.option("--device", "-d", type=str, default="cuda")
 def main(
     wandb_id: str,
     out_dir: str,
+    spec: str,
     log_dir: str = "logs",
     ckpt_type: Literal["best", "last"] = "last",
     device: str = "cuda",
@@ -154,7 +182,7 @@ def main(
     model = instantiate_model(cfg.model, ckpt_file, device)
     torch.set_grad_enabled(False)
 
-    plot_param2tok(model.vector_field.projection, out_dir)
+    plot_param2tok(model.vector_field.projection, out_dir, spec)
 
 
 if __name__ == "__main__":
