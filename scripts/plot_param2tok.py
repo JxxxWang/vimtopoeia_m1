@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Literal, Tuple
 
@@ -92,7 +93,7 @@ def plot_assignment(proj: LearntProjection):
 
     maxval = np.abs(assignment).max().item()
     img = ax.imshow(
-        assignment.cpu().numpy(),
+        assignment,
         aspect="equal",
         vmin=-maxval,
         vmax=maxval,
@@ -111,6 +112,7 @@ def plot_assignment(proj: LearntProjection):
 
 def plot_param2tok(proj: LearntProjection, out_dir: str):
     assignment_fig = plot_assignment(proj)
+    os.makedirs(out_dir, exist_ok=True)
     plt.savefig(assignment_fig, f"{out_dir}/assignment.png")
 
 
