@@ -169,7 +169,7 @@ def plot_assignment(proj: LearntProjection, spec: str):
 
     ratio = assignment.shape[1] / assignment.shape[0]
 
-    fig, ax = plt.subplots(1, 1, figsize=(32 * ratio, 32))
+    fig, ax = plt.subplots(1, 1, figsize=(12 * ratio, 12))
 
     maxval = np.abs(assignment).max().item()
     img = ax.imshow(
@@ -179,7 +179,7 @@ def plot_assignment(proj: LearntProjection, spec: str):
         vmax=maxval,
         cmap="RdBu",
     )
-    fig.colorbar(img, ax=ax)
+    # fig.colorbar(img, ax=ax)
 
     ax.set_title("Assignment")
 
