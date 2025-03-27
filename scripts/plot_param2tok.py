@@ -193,7 +193,7 @@ def add_labels(ax: plt.Axes, spec: str):
         centers.append(center)
         start += length
 
-        ax.axvline(start, color="k", alpha=0.5)
+        ax.axvline(start - 0.5, color="k", alpha=0.5)
 
     ax.set_xticks(centers)
     ax.set_xticklabels(labels)
