@@ -66,7 +66,7 @@ def instantiate_model(
 
     logger.info("Mapping state dict to params")
     model.setup(None)
-    model.load_state_dict(state_dict)
+    model.load_state_dict(state_dict, strict=False)
 
     return model
 
@@ -230,7 +230,20 @@ def get_labels(spec: str):
     return true_intervals
 
 
-def add_labels(fig: plt.Figure, ax: plt.Axes, spec: str):
+def add_labels(fig: plt.Figure, ax: plt.Axes, spec: str, axis: Literal["x", "y"] = "x"):
+    if axis == "x":
+        get_ticks = ax.get_xticks
+        set_ticks = ax.set_xticks
+        get_ticklabels = ax.get_xticklabels
+        set_ticklabels = ax.set_xticklabels
+        add_line = ax.axvline
+    else:
+        get_ticks = ax.get_yticks
+        set_ticks = ax.set_yticks
+        get_ticklabels = ax.get_yticklabels
+        set_ticklabels = ax.set_yticklabels
+        add_line = ax.axhline
+
     intervals = get_labels(spec)
     labels = [label for label, _ in intervals]
 
@@ -241,26 +254,31 @@ def add_labels(fig: plt.Figure, ax: plt.Axes, spec: str):
         centers.append(center)
         start += length
 
-        ax.axvline(start - 0.5, color="k", alpha=0.5)
+        add_line(start - 0.5, color="k", alpha=0.5)
 
-    ax.set_xticks(centers)
-    ax.set_xticklabels(labels)
-    plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+    set_ticks(centers)
+    set_ticklabels(labels)
+    if axis == "x":
+        plt.setp(get_ticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+    else:
+        plt.setp(get_ticklabels(), rotation=-45, ha="right", rotation_mode="anchor")
 
     fig.canvas.draw()
     renderer = fig.canvas.get_renderer()
-    text_objs = ax.get_xticklabels()
+    text_objs = get_ticklabels()
     bboxes = [txt.get_window_extent(renderer=renderer) for txt in text_objs]
-    y_shift_per_collision = 1  # points to shift for each collision
     current_shift = 0
-    last_xend = -1e9  # track right edge of the last label
+    last_end = -1e9  # track right edge of the last label
 
     denom = math.cos(math.pi / 4)
     min_perp_dist = 15
 
     for txt, bbox in zip(text_objs, bboxes):
         # if this bbox starts before the last one ends, we have an overlap
-        perp_dist = (bbox.x1 - last_xend - current_shift) * denom
+        if axis == "x":
+            perp_dist = (bbox.x1 - last_end - current_shift) * denom
+        else:
+            perp_dist = (bbox.y1 - last_end - current_shift) * denom
 
         if perp_dist < min_perp_dist:
             shift = (min_perp_dist - perp_dist) / denom
@@ -272,7 +290,12 @@ def add_labels(fig: plt.Figure, ax: plt.Axes, spec: str):
         # You can also do this in axes or figure fraction coordinates if you prefer.
         x0, y0 = txt.get_position()
         x0, y0 = ax.transData.transform((x0, y0))
-        y0 = y0 + current_shift / 100
+
+        if axis == "x":
+            y0 = y0 + current_shift / 100
+        else:
+            x0 = x0 - current_shift / 100
+
         x0, y0 = ax.transData.inverted().transform((x0, y0))
 
         txt.set_position((x0, y0))  # 72 points per inch
@@ -280,7 +303,7 @@ def add_labels(fig: plt.Figure, ax: plt.Axes, spec: str):
         # fig.canvas.draw()
         # bbox = txt.get_window_extent(renderer=renderer)
 
-        last_xend = bbox.x1
+        last_end = bbox.x1 if axis == "x" else bbox.y1
 
 
 def plot_assignment(proj: LearntProjection, spec: str):
@@ -323,13 +346,53 @@ def plot_assignment(proj: LearntProjection, spec: str):
     return fig
 
 
+def plot_embeds(proj: LearntProjection, spec: str):
+    in_embed = proj.in_projection.detach().cpu().numpy()
+    out_embed = proj.out_projection.detach().cpu().numpy()
+
+    fig, ax = plt.subplots(1, 2, figsize=(12, 8), dpi=120)
+
+    in_img = ax[0].imshow(
+        in_embed,
+        aspect="equal",
+        vmin=-1,
+        vmax=1,
+        cmap="RdBu",
+    )
+    out_img = ax[1].imshow(
+        out_embed,
+        aspect="equal",
+        vmin=-1,
+        vmax=1,
+        cmap="RdBu",
+    )
+
+    add_labels(fig, ax[0], spec, "x")
+    add_labels(fig, ax[0], spec, "y")
+    add_labels(fig, ax[1], spec, "x")
+    add_labels(fig, ax[1], spec, "y")
+
+    fig.colorbar(out_img, ax=ax[1])
+
+    ax[0].set_title("In Embedding")
+    ax[1].set_title("Out Embedding")
+
+    fig.tight_layout()
+
+    return fig
+
+
 def plot_param2tok(proj: LearntProjection, out_dir: str, spec: str):
     logger.info("Plotting assignment")
     assignment_fig = plot_assignment(proj, spec)
     logger.info("Plotting done")
+    logger.info("Plotting embeds")
+    embed_fig = plot_embeds(proj, spec)
+    logger.info("Plotting done")
     logger.info(f"Saving to {out_dir}")
     os.makedirs(out_dir, exist_ok=True)
     assignment_fig.savefig(f"{out_dir}/assignment.pdf")
+    embed_fig.savefig(f"{out_dir}/embeds.pdf")
     logger.info("Saved")
 
 
