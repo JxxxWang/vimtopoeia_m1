@@ -165,7 +165,17 @@ RENAMES = {
 }
 
 
+def kosc_intervals(spec: str):
+    _, k = spec.rsplit("_", 1)
+    k = int(k)
+
+    return [("Frequency", k), ("Amplitude", k), ("Waveform", k)]
+
+
 def get_labels(spec: str):
+    if spec.startswith("k_"):
+        return kosc_intervals(spec)
+
     param_spec = param_specs[spec]
 
     synth_intervals = [(p.name, len(p)) for p in param_spec.synth_params]
@@ -248,7 +258,6 @@ def add_labels(fig: plt.Figure, ax: plt.Axes, spec: str):
     denom = math.cos(math.pi / 4)
     min_perp_dist = 15
 
-
     for txt, bbox in zip(text_objs, bboxes):
         # if this bbox starts before the last one ends, we have an overlap
         perp_dist = (bbox.x1 - last_xend - current_shift) * denom
@@ -268,8 +277,8 @@ def add_labels(fig: plt.Figure, ax: plt.Axes, spec: str):
 
         txt.set_position((x0, y0))  # 72 points per inch
 
-        #fig.canvas.draw()
-        #bbox = txt.get_window_extent(renderer=renderer)
+        # fig.canvas.draw()
+        # bbox = txt.get_window_extent(renderer=renderer)
 
         last_xend = bbox.x1
 
@@ -277,7 +286,6 @@ def add_labels(fig: plt.Figure, ax: plt.Axes, spec: str):
 def plot_assignment(proj: LearntProjection, spec: str):
     assignment = proj.assignment.detach().cpu().numpy()
     assignment = sort_assignment(assignment)
-
 
     plt.rcParams.update({"font.size": 14})
 
