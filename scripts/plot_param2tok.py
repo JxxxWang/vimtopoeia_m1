@@ -268,7 +268,7 @@ def add_labels(fig: plt.Figure, ax: plt.Axes, spec: str, axis: Literal["x", "y"]
     text_objs = get_ticklabels()
     bboxes = [txt.get_window_extent(renderer=renderer) for txt in text_objs]
     current_shift = 0
-    last_end = -1e9  # track right edge of the last label
+    last_end = -1e9 if axis == "x" else 1e9  # track right edge of the last label
 
     denom = math.cos(math.pi / 4)
     min_perp_dist = 15
@@ -361,11 +361,11 @@ def plot_embeds(proj: LearntProjection, spec: str):
 
     # cosine similarities
 
-    fig = plt.figure(figsize=(12, 8), dpi=120)
+    fig = plt.figure(figsize=(12, 6), dpi=120)
     # fig, ax = plt.subplots(1, 2, figsize=(12, 8), dpi=120)
     ax = [
-        fig.add_axes([0.15, 0.0, 0.33, 1.0]),
-        fig.add_axes([0.63, 0.0, 0.33, 1.0]),
+        fig.add_axes([0.15, 0.1, 0.33, 0.8]),
+        fig.add_axes([0.63, 0.1, 0.33, 0.8]),
     ]
 
     in_img = ax[0].imshow(
