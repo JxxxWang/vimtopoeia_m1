@@ -251,7 +251,7 @@ def add_labels(fig: plt.Figure, ax: plt.Axes, spec: str):
 
     for txt, bbox in zip(text_objs, bboxes):
         # if this bbox starts before the last one ends, we have an overlap
-        perp_dist = (bbox.x0 - last_xend) / denom
+        perp_dist = (bbox.x1 - last_xend) / denom
 
         if perp_dist < min_perp_dist:
             shift = (min_perp_dist - perp_dist) * denom
