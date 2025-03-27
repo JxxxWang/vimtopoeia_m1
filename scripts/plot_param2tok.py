@@ -241,7 +241,7 @@ def add_labels(fig: plt.Figure, ax: plt.Axes, spec: str):
     renderer = fig.canvas.get_renderer()
     text_objs = ax.get_xticklabels()
     bboxes = [txt.get_window_extent(renderer=renderer) for txt in text_objs]
-    y_shift_per_collision = 5  # points to shift for each collision
+    y_shift_per_collision = 2  # points to shift for each collision
     current_shift = 0
     last_xend = -1e9  # track right edge of the last label
     for txt, bbox in zip(text_objs, bboxes):
@@ -266,7 +266,7 @@ def plot_assignment(proj: LearntProjection, spec: str):
 
     ratio = assignment.shape[1] / assignment.shape[0]
 
-    plt.rcParams.update({"font.size": 18})
+    plt.rcParams.update({"font.size": 14})
     fig, ax = plt.subplots(1, 1, figsize=(12 * ratio, 12))
 
     maxval = np.abs(assignment).max().item()
