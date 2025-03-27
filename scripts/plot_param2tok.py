@@ -263,47 +263,47 @@ def add_labels(fig: plt.Figure, ax: plt.Axes, spec: str, axis: Literal["x", "y"]
     else:
         plt.setp(get_ticklabels(), rotation=-45, ha="right", rotation_mode="anchor")
 
-    fig.canvas.draw()
-    renderer = fig.canvas.get_renderer()
-    text_objs = get_ticklabels()
-    bboxes = [txt.get_window_extent(renderer=renderer) for txt in text_objs]
-    current_shift = 0
-    last_end = -1e9 if axis == "x" else 1e9  # track right edge of the last label
-
-    denom = math.cos(math.pi / 4)
-    min_perp_dist = 15
-
-    for txt, bbox in zip(text_objs, bboxes):
-        # if this bbox starts before the last one ends, we have an overlap
-        if axis == "x":
-            perp_dist = (bbox.x1 - last_end - current_shift) * denom
-        else:
-            perp_dist = ((last_end + current_shift) - bbox.y1) * denom
-
-        if perp_dist < min_perp_dist:
-            shift = (min_perp_dist - perp_dist) / denom
-            current_shift = shift
-        else:
-            # reset shift if no overlap
-            current_shift = 0
-        # move the text by modifying its 'y' position in data coordinates
-        # You can also do this in axes or figure fraction coordinates if you prefer.
-        x0, y0 = txt.get_position()
-        x0, y0 = ax.transData.transform((x0, y0))
-
-        if axis == "x":
-            y0 = y0 + current_shift / 100
-        else:
-            x0 = x0 - current_shift / 100
-
-        x0, y0 = ax.transData.inverted().transform((x0, y0))
-
-        txt.set_position((x0, y0))  # 72 points per inch
-
-        # fig.canvas.draw()
-        # bbox = txt.get_window_extent(renderer=renderer)
-
-        last_end = bbox.x1 if axis == "x" else bbox.y1
+    # fig.canvas.draw()
+    # renderer = fig.canvas.get_renderer()
+    # text_objs = get_ticklabels()
+    # bboxes = [txt.get_window_extent(renderer=renderer) for txt in text_objs]
+    # current_shift = 0
+    # last_end = -1e9 if axis == "x" else 1e9  # track right edge of the last label
+    #
+    # denom = math.cos(math.pi / 4)
+    # min_perp_dist = 15
+    #
+    # for txt, bbox in zip(text_objs, bboxes):
+    #     # if this bbox starts before the last one ends, we have an overlap
+    #     if axis == "x":
+    #         perp_dist = (bbox.x1 - last_end - current_shift) * denom
+    #     else:
+    #         perp_dist = ((last_end + current_shift) - bbox.y1) * denom
+    #
+    #     if perp_dist < min_perp_dist:
+    #         shift = (min_perp_dist - perp_dist) / denom
+    #         current_shift = shift
+    #     else:
+    #         # reset shift if no overlap
+    #         current_shift = 0
+    #     # move the text by modifying its 'y' position in data coordinates
+    #     # You can also do this in axes or figure fraction coordinates if you prefer.
+    #     x0, y0 = txt.get_position()
+    #     x0, y0 = ax.transData.transform((x0, y0))
+    #
+    #     if axis == "x":
+    #         y0 = y0 + current_shift / 100
+    #     else:
+    #         x0 = x0 - current_shift / 100
+    #
+    #     x0, y0 = ax.transData.inverted().transform((x0, y0))
+    #
+    #     txt.set_position((x0, y0))  # 72 points per inch
+    #
+    #     # fig.canvas.draw()
+    #     # bbox = txt.get_window_extent(renderer=renderer)
+    #
+    #     last_end = bbox.x1 if axis == "x" else bbox.y1
 
 
 def plot_assignment(proj: LearntProjection, spec: str):
