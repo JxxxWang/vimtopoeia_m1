@@ -219,7 +219,7 @@ def get_labels(spec: str):
     return true_intervals
 
 
-def add_labels(ax: plt.Axes, spec: str):
+def add_labels(fig: plt.Figure, ax: plt.Axes, spec: str):
     intervals = get_labels(spec)
     labels = [label for label, _ in intervals]
 
@@ -236,6 +236,27 @@ def add_labels(ax: plt.Axes, spec: str):
     ax.set_xticks(centers)
     ax.set_xticklabels(labels)
     plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+    text_objs = ax.get_xticklabels()
+    bboxes = [txt.get_window_extent(renderer=renderer) for txt in text_objs]
+    y_shift_per_collision = 5  # points to shift for each collision
+    current_shift = 0
+    last_xend = -1e9  # track right edge of the last label
+    for txt, bbox in zip(text_objs, bboxes):
+        # if this bbox starts before the last one ends, we have an overlap
+        if bbox.x0 <= last_xend:
+            current_shift += y_shift_per_collision
+        else:
+            # reset shift if no overlap
+            current_shift = 0
+        # move the text by modifying its 'y' position in data coordinates
+        # You can also do this in axes or figure fraction coordinates if you prefer.
+        x0, y0 = txt.get_position()
+        txt.set_position((x0, y0 + current_shift / 72.0))  # 72 points per inch
+        last_xend = bbox.x1
+
 
 
 
@@ -260,7 +281,7 @@ def plot_assignment(proj: LearntProjection, spec: str):
 
     # ax.set_title("Assignment")
 
-    add_labels(ax, spec)
+    add_labels(fig, ax, spec)
 
     ax.set_xlabel("params")
     ax.set_ylabel("tokens")
