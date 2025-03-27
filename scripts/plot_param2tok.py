@@ -1,3 +1,4 @@
+import math
 import os
 from pathlib import Path
 from typing import Literal, Tuple
@@ -244,11 +245,17 @@ def add_labels(fig: plt.Figure, ax: plt.Axes, spec: str):
     y_shift_per_collision = 1  # points to shift for each collision
     current_shift = 0
     last_xend = -1e9  # track right edge of the last label
+
+    denom = math.cos(math.pi / 4)
+    min_perp_dist = 10
+
     for txt, bbox in zip(text_objs, bboxes):
         # if this bbox starts before the last one ends, we have an overlap
-        print(bbox.x0, last_xend)
-        if bbox.x0 <= last_xend:
-            current_shift -= y_shift_per_collision
+        perp_dist = (bbox.x0 - last_xend) / denom
+
+        if perp_dist < min_perp_dist:
+            shift = (min_perp_dist - perp_dist) * denom
+            current_shift -= shift
         else:
             # reset shift if no overlap
             current_shift = 0
@@ -256,9 +263,7 @@ def add_labels(fig: plt.Figure, ax: plt.Axes, spec: str):
         # You can also do this in axes or figure fraction coordinates if you prefer.
         x0, y0 = txt.get_position()
         txt.set_position((x0, y0 + current_shift / 72.0))  # 72 points per inch
-        last_xend = (bbox.x1 + bbox.x0) / 2
-
-
+        last_xend = bbox.x1
 
 
 def plot_assignment(proj: LearntProjection, spec: str):
