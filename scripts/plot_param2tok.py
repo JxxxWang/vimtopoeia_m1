@@ -105,6 +105,30 @@ def strip_scene_id(param_name: str) -> str:
     return param_name
 
 
+PREFIXES = (
+    "amp_eg",
+    "filter_eg",
+    "filter_1",
+    "filter_2",
+    "waveshaper",
+    "osc_1",
+    "osc_2",
+    "osc_3",
+    "lfo_1",
+    "lfo_2",
+    "lfo_3",
+    "lfo_4",
+    "lfo_5",
+    "lfo_6",
+    "noise",
+    "ring_modulation_1x2",
+    "ring_modulation_2x3",
+    "fx_a1",
+    "fx_a2",
+    "fx_a3",
+)
+
+
 def get_labels(spec: str):
     param_spec = param_specs[spec]
 
@@ -113,34 +137,46 @@ def get_labels(spec: str):
     intervals = synth_intervals + note_intervals
 
     intervals = [(strip_scene_id(n), l) for n, l in intervals]
+    true_intervals = []
 
-    i = 0
-    min_prefix_len = 2
-    cur_prefix_len = 0
-    while True:
-        if i >= len(intervals) - 1:
-            break
+    current_prefix = None
+    current_prefix_length = 0
 
-        cur_name, cur_len = intervals[i]
-        next_name, next_len = intervals[i + 1]
+    for cur_name, cur_len in intervals:
+        should_continue = False
+        for prefix in PREFIXES:
+            if cur_name.startswith(prefix):
+                if prefix != current_prefix and current_prefix is not None:
+                    true_intervals.append((current_prefix, current_prefix_length))
 
-        prefix = longest_matching_initial_substring(cur_name, next_name)
-        if len(prefix) >= max(min_prefix_len, cur_prefix_len):
-            if cur_prefix_len == 0:
-                new_name = prefix
-            else:
-                new_name = cur_name
+                    current_prefix = prefix
+                    current_prefix_length = cur_len
 
-            intervals[i] = (new_name, cur_len + next_len)
-            intervals.pop(i + 1)
-            cur_prefix_len = len(prefix)
+                    should_continue = True
+                    break
+                if prefix == current_prefix:
+                    current_prefix_length += cur_len
+
+                    should_continue = True
+                    break
+                if current_prefix is None:
+                    current_prefix = prefix
+                    current_prefix_length = cur_len
+
+                    should_continue = True
+                    break
+
+        if should_continue:
             continue
 
-        cur_prefix_len = 0
+        true_intervals.append((current_prefix, current_prefix_length))
 
-        i += 1
+        current_prefix = None
+        current_prefix_length = 0
 
-    return intervals
+        true_intervals.append((cur_name, cur_len))
+
+    return true_intervals
 
 
 def add_labels(ax: plt.Axes, spec: str):
