@@ -61,7 +61,7 @@ class CategoricalParameter(Parameter):
             return len(self.raw_values)
 
     def sample(self) -> float:
-        p = np.array(self.weights)
+        p = np.array(self.weights, dtype=np.float64)
         p /= p.sum()
         return np.random.choice(self.raw_values, p=p)
 

@@ -6,11 +6,11 @@ from src.data.vst.param_spec import (
     ParamSpec,
 )
 
-SURGE_SIMPLE_PARAM_SPEC = ParamSpec(
+SURGE_VIM_PARAM_SPEC = ParamSpec(
     [
     #Amplitude ADSR envelope
-        ContinuousParameter(name="a_amp_eg_attack", min=0.0, max=0.77, distribution="log"),  
-        ContinuousParameter(name="a_amp_eg_decay", min=0.0, max=0.77, distribution="log"),  # min increased to ensure audibility
+        ContinuousParameter(name="a_amp_eg_attack", min=0.0, max=0.77),  
+        ContinuousParameter(name="a_amp_eg_decay", min=0.0, max=0.77),  # min increased to ensure audibility
         ContinuousParameter(name="a_amp_eg_sustain", min=0.0, max=1.0),
         ContinuousParameter(
             name="a_amp_eg_release", min=0.0, max=0.77
@@ -30,18 +30,18 @@ SURGE_SIMPLE_PARAM_SPEC = ParamSpec(
             constant_val_p=0.0,
             constant_val=0.0,
         ),
-        CategoricalParameter(
-            name="a_filter_configuration",
-            values=[
-                "Serial 1",
-                "Dual 1",
-            ],
-            raw_values=[
-                0.038,
-                0.4295,
-            ],
-            encoding="onehot",
-        ),
+        # CategoricalParameter(
+        #     name="a_filter_configuration",
+        #     values=[
+        #         "Serial 1",
+        #         "Dual 1",
+        #     ],
+        #     raw_values=[
+        #         0.038,
+        #         0.4295,
+        #     ],
+        #     encoding="onehot",
+        # ),
         ContinuousParameter(
             name="a_filter_eg_attack", min=0.0, max=0.1
         ),  
@@ -62,7 +62,7 @@ SURGE_SIMPLE_PARAM_SPEC = ParamSpec(
 
 
         # -- Filter 1
-        ContinuousParameter(name="a_filter_1_cutoff", min=0.2, max=1.0, distribution="log"), # min increased (approx 100hz)
+        ContinuousParameter(name="a_filter_1_cutoff", min=0.2, max=1.0), # min increased (approx 100hz)
         ContinuousParameter(name="a_filter_1_feg_mod_amount", min=0.0, max=1.0),
         ContinuousParameter(name="a_filter_1_resonance", min=0.0, max=1.0),
         CategoricalParameter(
@@ -153,12 +153,12 @@ SURGE_SIMPLE_PARAM_SPEC = ParamSpec(
             name="a_osc_1_pitch", min=0.49, max=0.51, constant_val_p=0.5, constant_val=0.5
         ),
         
-        # CategoricalParameter(
-        #     name="a_osc_1_route",
-        #     values=["Filter 1"],
-        #     raw_values=[0.1265],
-        #     encoding="onehot",
-        # ),
+        CategoricalParameter(
+            name="a_osc_1_route",
+            values=["Filter 1"],
+            raw_values=[0.1265],
+            encoding="onehot",
+        ),
         
         # ContinuousParameter(name="a_osc_1_shape", min=0.0, max=1.0),
         # ContinuousParameter(name="a_osc_1_width_1", min=0.0, max=1.0),
@@ -170,7 +170,6 @@ SURGE_SIMPLE_PARAM_SPEC = ParamSpec(
             name="a_osc_1_unison_detune", 
             min=0.0, 
             max=0.3, 
-            distribution="log"
         ),
         # CategoricalParameter(
         #     name="a_osc_1_unison_voices",
@@ -243,6 +242,15 @@ SURGE_SIMPLE_PARAM_SPEC = ParamSpec(
         ContinuousParameter(name="a_osc_2_volume", min=0.0, max=1.0),
         ContinuousParameter(name="a_osc_2_pulse", min=0.0, max=1.0),
         ContinuousParameter(name="a_osc_2_triangle", min=0.0, max=1.0),
+        
+        # Oscillator 3 OFF
+        CategoricalParameter(
+            name="a_osc_3_mute",
+            values=[False, True],
+            raw_values=[0.2505, 0.7505],
+            weights=[0, 1],
+            encoding="onehot",)
+            ,
 
         # Noise
         ContinuousParameter(name="a_noise_color", min=0.0, max=1.0),
