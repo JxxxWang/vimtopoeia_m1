@@ -83,8 +83,7 @@ def generate_sample(
             signal_duration_seconds,
             sample_rate,
             channels,
-            # preset_path=preset_path,
-            preset_path=None,
+            preset_path=preset_path,
         )
 
         meter = Meter(sample_rate)
@@ -257,8 +256,7 @@ def make_dataset(
             channels=channels,
             min_loudness=min_loudness,
             param_spec=param_spec,
-            # preset_path=preset_path,
-            preset_path=None,
+            preset_path=preset_path,
         )
 
         sample_batch.append(sample)
@@ -286,15 +284,14 @@ def make_dataset(
 @click.command()
 @click.argument("data_file", type=str, required=True)
 @click.argument("num_samples", type=int, required=True)
-@click.option("--plugin_path", "-p", type=str, default="/Library/Audio/Plug-Ins/VST3/Surge XT.vst3")
-# @click.option("--preset_path", "-r", type=str, default="presets/surge-base.vstpreset")
-@click.option("--preset_path", "-r", type=str, default=None)
+@click.option("--plugin_path", "-p", type=str, default="plugins/Surge XT.vst3")
+@click.option("--preset_path", "-r", type=str, default="presets/surge-mini.vstpreset")
 @click.option("--sample_rate", "-s", type=float, default=44100.0)
 @click.option("--channels", "-c", type=int, default=2)
 @click.option("--velocity", "-v", type=int, default=100)
 @click.option("--signal_duration_seconds", "-d", type=float, default=4.0)
 @click.option("--min_loudness", "-l", type=float, default=-55.0)
-@click.option("--param_spec", "-t", type=str, default="surge_full")
+@click.option("--param_spec", "-t", type=str, default="surge_simple")
 @click.option("--sample_batch_size", "-b", type=int, default=32)
 def main(
     data_file: str,
