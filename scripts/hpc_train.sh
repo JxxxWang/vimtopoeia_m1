@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=vim_no_spec
+#SBATCH --job-name=vim_m1
 #SBATCH --output=../sbatch/m1_%j.out
 #SBATCH --error=../sbatch/m1_%j.err
 #SBATCH --partition=nvidia
