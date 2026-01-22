@@ -7,10 +7,10 @@ wandb:
   offline: False
   id: null # pass correct id to resume experiment!
   anonymous: null # enable anonymous logging
-  project: "synth-permutations"
+  project: "vimtopoeia-m1"
   log_model: true # upload lightning ckpts
   prefix: "" # a string to put at the beginning of metric keys
-  entity: "benhayes" # set to name of your wandb team
+  entity: "jx2003910-new-york-university" # set to name of your wandb team if using one
   group: ""
   tags: []
   job_type: ""
