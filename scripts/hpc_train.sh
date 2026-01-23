@@ -6,7 +6,7 @@
 #SBATCH --gres=gpu:a100:1
 #SBATCH --cpus-per-task=4            
 #SBATCH --mem=64G                     
-#SBATCH --time=3:00:00      
+#SBATCH --time=12:00:00      
     
 source /share/apps/NYUAD5/miniconda/3-4.11.0/bin/activate
 conda activate vim_m1
