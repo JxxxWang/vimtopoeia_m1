@@ -11,6 +11,12 @@
 source /share/apps/NYUAD5/miniconda/3-4.11.0/bin/activate
 conda activate vim_m1
 cd /scratch/hw3140/vimtopoeia_m1
+# Load compiler for torch.compile
+module load gcc
+export CC=gcc
+export CXX=g++
+
+# Set project root
 export PROJECT_ROOT=/scratch/hw3140/vimtopoeia_m1
 
 # Print HPC environment info
