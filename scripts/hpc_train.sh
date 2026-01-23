@@ -32,8 +32,7 @@ echo "Starting model training..."
 echo ""
 
 # Run training with Hydra using HPC config
-python scripts/get_dataset_stats.py data=surge_hpc
-python src/train.py data=surge_hpc model=surge_flow trainer=gpu run_name=surge_flow_train logger=csv
+python src/train.py data=surge_hpc model=surge_flow trainer=gpu +run_name=surge_flow_train logger=csv
 
 echo ""
 echo "=========================================="
