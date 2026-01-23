@@ -11,6 +11,7 @@
 source /share/apps/NYUAD5/miniconda/3-4.11.0/bin/activate
 conda activate vim_m1
 cd /scratch/hw3140/vimtopoeia_m1
+export PROJECT_ROOT=/scratch/hw3140/vimtopoeia_m1
 
 # Print HPC environment info
 echo "=========================================="
@@ -18,6 +19,7 @@ echo "Starting training on HPC"
 echo "Job ID: $SLURM_JOB_ID"
 echo "Node: $SLURM_NODELIST"
 echo "GPUs: $SLURM_GPUS"
+echo "Project root: $PROJECT_ROOT"
 echo "Time: $(date)"
 echo "Working directory: $(pwd)"
 echo "=========================================="
@@ -30,7 +32,8 @@ echo "Starting model training..."
 echo ""
 
 # Run training with Hydra using HPC config
-python src/train.py data=surge_hpc model=surge_flow trainer=gpu
+python scripts/get_dataset_stats.py data=surge_hpc
+python src/train.py data=surge_hpc model=surge_flow trainer=gpu run_name=surge_flow_train logger=csv
 
 echo ""
 echo "=========================================="
