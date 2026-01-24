@@ -1,6 +1,6 @@
 _target_: src.data.surge_datamodule.SurgeDataModule
 dataset_root: /scratch/hw3140/vimtopoeia_m1/data
 use_saved_mean_and_variance: true
-batch_size: 1024
+batch_size: 256
 ot: true
 num_workers: 4
