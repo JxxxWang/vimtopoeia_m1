@@ -19,6 +19,11 @@ export CXX=g++
 # Set project root
 export PROJECT_ROOT=/scratch/hw3140/vimtopoeia_m1
 
+# Enable better error messages and logging
+export PYTHONUNBUFFERED=1
+export CUDA_LAUNCH_BLOCKING=0  # Keep 0 for performance
+export TORCH_SHOW_CPP_STACKTRACES=1
+
 # Print HPC environment info
 echo "=========================================="
 echo "Starting training on HPC"
@@ -30,15 +35,12 @@ echo "Time: $(date)"
 echo "Working directory: $(pwd)"
 echo "=========================================="
 
-# Show GPU info
-nvidia-smi
-
 echo ""
 echo "Starting model training..."
 echo ""
 
 # Run training with Hydra using HPC config
-python src/train.py data=surge_hpc model=vim_flow trainer=gpu +run_name=surge_flow_train logger=csv
+python src/train.py data=surge_hpc model=vim_flow trainer=vim_gpu +run_name=surge_flow_train logger=csv
 
 echo ""
 echo "=========================================="
