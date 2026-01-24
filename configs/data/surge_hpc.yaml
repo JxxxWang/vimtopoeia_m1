@@ -3,4 +3,4 @@ dataset_root: /scratch/hw3140/vimtopoeia_m1/data
 use_saved_mean_and_variance: true
 batch_size: 1024
 ot: true
-num_workers: 8
+num_workers: 4
