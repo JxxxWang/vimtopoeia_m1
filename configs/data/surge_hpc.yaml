@@ -4,6 +4,3 @@ use_saved_mean_and_variance: true
 batch_size: 1024
 ot: true
 num_workers: 8
-pin_memory: true
-persistent_workers: true
-prefetch_factor: 4
