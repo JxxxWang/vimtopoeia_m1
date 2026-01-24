@@ -40,7 +40,7 @@ echo "Starting model training..."
 echo ""
 
 # Run training with Hydra using HPC config
-python src/train.py data=surge_hpc model=vim_flow trainer=vim_gpu +run_name=surge_flow_train logger=csv
+python src/train.py data=surge_hpc model=vim_flow trainer=vim_gpu +run_name=surge_flow_train logger=csv callbacks=default_surge
 
 echo ""
 echo "=========================================="
